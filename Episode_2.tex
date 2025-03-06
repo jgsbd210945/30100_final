@@ -1,0 +1,885 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+%
+\documentclass[
+  letterpaper,
+  DIV=11,
+  numbers=noendperiod]{scrartcl}
+
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else  
+    % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+% Make \paragraph and \subparagraph free-standing
+\makeatletter
+\ifx\paragraph\undefined\else
+  \let\oldparagraph\paragraph
+  \renewcommand{\paragraph}{
+    \@ifstar
+      \xxxParagraphStar
+      \xxxParagraphNoStar
+  }
+  \newcommand{\xxxParagraphStar}[1]{\oldparagraph*{#1}\mbox{}}
+  \newcommand{\xxxParagraphNoStar}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+  \let\oldsubparagraph\subparagraph
+  \renewcommand{\subparagraph}{
+    \@ifstar
+      \xxxSubParagraphStar
+      \xxxSubParagraphNoStar
+  }
+  \newcommand{\xxxSubParagraphStar}[1]{\oldsubparagraph*{#1}\mbox{}}
+  \newcommand{\xxxSubParagraphNoStar}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+\makeatother
+
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{241,243,245}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.68,0.00,0.00}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.37,0.37,0.37}{#1}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.40,0.45,0.13}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.68,0.00,0.00}{#1}}
+\newcommand{\BuiltInTok}[1]{\textcolor[rgb]{0.00,0.23,0.31}{#1}}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.13,0.47,0.30}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.37,0.37,0.37}{#1}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.37,0.37,0.37}{\textit{#1}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.00,0.23,0.31}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.68,0.00,0.00}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.68,0.00,0.00}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.37,0.37,0.37}{\textit{#1}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.68,0.00,0.00}{#1}}
+\newcommand{\ExtensionTok}[1]{\textcolor[rgb]{0.00,0.23,0.31}{#1}}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.68,0.00,0.00}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.28,0.35,0.67}{#1}}
+\newcommand{\ImportTok}[1]{\textcolor[rgb]{0.00,0.46,0.62}{#1}}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.37,0.37,0.37}{#1}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.00,0.23,0.31}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{\textcolor[rgb]{0.00,0.23,0.31}{#1}}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.37,0.37,0.37}{#1}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.00,0.23,0.31}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.68,0.00,0.00}{#1}}
+\newcommand{\RegionMarkerTok}[1]{\textcolor[rgb]{0.00,0.23,0.31}{#1}}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.37,0.37,0.37}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.13,0.47,0.30}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.13,0.47,0.30}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.07,0.07,0.07}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.13,0.47,0.30}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.37,0.37,0.37}{\textit{#1}}}
+
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+% definitions for citeproc citations
+\NewDocumentCommand\citeproctext{}{}
+\NewDocumentCommand\citeproc{mm}{%
+  \begingroup\def\citeproctext{#2}\cite{#1}\endgroup}
+\makeatletter
+ % allow citations to break across lines
+ \let\@cite@ofmt\@firstofone
+ % avoid brackets around text for \cite:
+ \def\@biblabel#1{}
+ \def\@cite#1#2{{#1\if@tempswa , #2\fi}}
+\makeatother
+\newlength{\cslhangindent}
+\setlength{\cslhangindent}{1.5em}
+\newlength{\csllabelwidth}
+\setlength{\csllabelwidth}{3em}
+\newenvironment{CSLReferences}[2] % #1 hanging-indent, #2 entry-spacing
+ {\begin{list}{}{%
+  \setlength{\itemindent}{0pt}
+  \setlength{\leftmargin}{0pt}
+  \setlength{\parsep}{0pt}
+  % turn on hanging indent if param 1 is 1
+  \ifodd #1
+   \setlength{\leftmargin}{\cslhangindent}
+   \setlength{\itemindent}{-1\cslhangindent}
+  \fi
+  % set entry spacing
+  \setlength{\itemsep}{#2\baselineskip}}}
+ {\end{list}}
+\usepackage{calc}
+\newcommand{\CSLBlock}[1]{\hfill\break\parbox[t]{\linewidth}{\strut\ignorespaces#1\strut}}
+\newcommand{\CSLLeftMargin}[1]{\parbox[t]{\csllabelwidth}{\strut#1\strut}}
+\newcommand{\CSLRightInline}[1]{\parbox[t]{\linewidth - \csllabelwidth}{\strut#1\strut}}
+\newcommand{\CSLIndent}[1]{\hspace{\cslhangindent}#1}
+
+\KOMAoption{captions}{tableheading}
+\makeatletter
+\@ifpackageloaded{caption}{}{\usepackage{caption}}
+\AtBeginDocument{%
+\ifdefined\contentsname
+  \renewcommand*\contentsname{Table of contents}
+\else
+  \newcommand\contentsname{Table of contents}
+\fi
+\ifdefined\listfigurename
+  \renewcommand*\listfigurename{List of Figures}
+\else
+  \newcommand\listfigurename{List of Figures}
+\fi
+\ifdefined\listtablename
+  \renewcommand*\listtablename{List of Tables}
+\else
+  \newcommand\listtablename{List of Tables}
+\fi
+\ifdefined\figurename
+  \renewcommand*\figurename{Figure}
+\else
+  \newcommand\figurename{Figure}
+\fi
+\ifdefined\tablename
+  \renewcommand*\tablename{Table}
+\else
+  \newcommand\tablename{Table}
+\fi
+}
+\@ifpackageloaded{float}{}{\usepackage{float}}
+\floatstyle{ruled}
+\@ifundefined{c@chapter}{\newfloat{codelisting}{h}{lop}}{\newfloat{codelisting}{h}{lop}[chapter]}
+\floatname{codelisting}{Listing}
+\newcommand*\listoflistings{\listof{codelisting}{List of Listings}}
+\makeatother
+\makeatletter
+\makeatother
+\makeatletter
+\@ifpackageloaded{caption}{}{\usepackage{caption}}
+\@ifpackageloaded{subcaption}{}{\usepackage{subcaption}}
+\makeatother
+
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\usepackage{bookmark}
+
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same} % disable monospaced font for URLs
+\hypersetup{
+  pdftitle={Shifts in Values, Shifts in Democracy: Modeling and Preliminary Discussion},
+  pdfauthor={Jason Gordon - jagordon@uchicago.edu},
+  colorlinks=true,
+  linkcolor={blue},
+  filecolor={Maroon},
+  citecolor={Blue},
+  urlcolor={Blue},
+  pdfcreator={LaTeX via pandoc}}
+
+
+\title{Shifts in Values, Shifts in Democracy: Modeling and Preliminary
+Discussion}
+\author{Jason Gordon - jagordon@uchicago.edu}
+\date{2025-02-24}
+
+\begin{document}
+\maketitle
+
+
+\newpage
+\tableofcontents
+\newpage
+
+\subsection{Intoduction}\label{intoduction}
+
+Democratic backsliding has increasingly taken hold of the world, with
+the Varieties of Democracy (V-DEM) 2024 Democracy Report identifying 28
+cases of backsliding in democracies, 13 of which having reverted to
+autocracies since the episode began.\footnote{Marina Nord et al.,
+  {``Democracy {Report} 2024: {Democracy Winning} and {Losing} at the
+  {Ballot}''} (University of Gothenburg: V-Dem Institute, March 2024).}
+As backsliding occurs within democracies with elected leaders, there is
+seemingly popular support \emph{against} democracy in these countries
+--- at least given the results of these elections.
+
+In this report, I plan to inspect if the wave of autocratization in
+democracies is the result of a shift in values against democracy, and
+which values are the most important for the shift to autocracy. As the
+number of cases of backsliding increases, it becomes increasingly
+important to understand why people would vote for actors that seek to
+challenge the core foundation of democratic institutions; with this
+knowledge, we may be able to further understand when cases of
+backsliding can happen.
+
+First, I will be summarizing existing literature on democratic
+backsliding, identifying the tension in what causes backsliding. Then, I
+will conduct some exploratory data analysis and model fitting of my
+dataset, using Lasso to identify notable variables. Finally, I will
+discuss if these variables have importance in conducting future
+research.
+
+\subsection{Existing Literature}\label{existing-literature}
+
+Over the past twenty-five years, there has been considerable discussion
+about the causes of democratic backsliding - defined generally as the
+gradual breakdown of democratic institutions through nonviolent --- and
+often, legal --- means.\footnote{Stephan Haggard and Robert Kaufman,
+  \emph{Backsliding: {Democratic Regress} in the {Contemporary World}},
+  Elements in {Political Economy} 9 (Cambridge University Press, 2021);
+  Steven Levitsky and Daniel Ziblatt, \emph{How {Democracies Die}},
+  First edition (New York: Crown, 2018).} Most discussions claim
+polarization is the core idea behind why democracies denigrate, but
+little is known about the shifts in values to \emph{why} it happens.
+
+Haggard and Kaufman (2021a) discuss backsliding through the lens of
+dysfunction of a lack of trust in institutions, which permit autocrats
+to capture the executive.\footnote{Stephan Haggard and Robert Kaufman,
+  {``The {Anatomy} of {Democratic Backsliding},''} \emph{Journal of
+  Democracy} 32, no. 4 (2021): 27--41.} These scholars point to an
+overall frustration with the system leading to polarization, as
+anti-system actors may be able to succeed in taking power if the
+population has no faith that the system will perform well with them.
+Other literature seems to correlate parts of this claim, with Cooley and
+Nexon (2020) arguing that these are akin to a ``counter-order''
+movement, made in rejection to the liberal system of
+ordering.\footnote{Alexander Cooley and Daniel Nexon, \emph{Exit from
+  {Hegemony}: {The Unraveling} of the {American Global Order}} (Oxford,
+  New York: Oxford University Press, 2020).} Generally, these scholars
+agree that movements and politicians rejecting the structure of
+governance as it stands currently obtain success, with Haggard and
+Kaufman finding it is due to dissatisfaction in institutions.
+
+However, Carothers and Press (2022) expand on this discussion, first
+limiting their discussion to the Global South and post-communist Europe,
+and delivering three separate categories of democratic backsliding, all
+of which create differing interpretations of the values behind
+backsliding. They state that backsliding can be caused by
+grievance-fueled illiberalism, agreeing with future literature that
+frustrations in institutions can drive backsliding; opportunistic
+authoritarianism, where autocrats act as political entrepreneurs to
+obtain power; and entrenched-interest revanchinism, where an interest
+group uses undemocratic means to reassert its claim.\footnote{Thomas
+  Carothers and Benjamin Press, {``Understanding and {Responding} to
+  {Global Democratic Backsliding}''} (Carnegie Endowment for
+  International Peace, October 2022).} Carothers and Press's framework
+gives an idea for the potential variance in the viewpoints behind
+backsliding, claiming it is not as simple as people being mad about
+institutions failing them.
+
+An additional perspective claims that backsliding isn't domestic in
+nature, but international. One such scholar, Anna Meyerrose (2020;
+2021), finds that instead of backsliding being triggered by domestic
+parties, that international organizations (IOs) are to blame. She claims
+that because IOs focus on elections and an increase in executive power
+in their democracy promotion, in addition to removing some areas of
+policy for political parties to divide on, potential autocrats have an
+easier time gaining and maintaining power.\footnote{Anna M. Meyerrose,
+  {``International {Sources} of {Democratic Backsliding},''} in
+  \emph{Routledge {Handbook} of {Illiberalism}} (Routledge, 2021); Anna
+  M. Meyerrose, {``The {Unintended Consequences} of {Democracy
+  Promotion}: {International Organizations} and {Democratic
+  Backsliding},''} \emph{Comparative Political Studies} 53, no. 10-11
+  (September 2020): 1547--81,
+  \url{https://doi.org/10.1177/0010414019897689}.} Deviating from other
+arguments, this branch of literature finds that while there may be
+domestic issues, structural problems make backsliding \emph{much} more
+likely. As a result, backsliding may have nothing to do with values
+populations have.
+
+I intend to put these differing claims to the test. While I expect that
+grievances with institutions play a not insignificant role in democratic
+backsliding, I do expect there to be variance in how much of a role it
+plays. Some states may backslide due to structural issues, or for
+electing a leader who at first may adhere to democratic norms, but then
+turn against the system later in their term.
+
+\subsection{Data}\label{data}
+
+I plan to combine the data from V-DEM's 2024 Democracy Report and the
+World Values Survey to identify correlations WVS's answers and overall
+level of democracy. I'm looking to use waves 6 and 7 of the WVS report,
+so will only need V-DEM's data beyond 2010.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{library}\NormalTok{(tidyverse)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+-- Attaching core tidyverse packages ------------------------ tidyverse 2.0.0 --
+v dplyr     1.1.4     v readr     2.1.5
+v forcats   1.0.0     v stringr   1.5.1
+v ggplot2   3.5.1     v tibble    3.2.1
+v lubridate 1.9.3     v tidyr     1.3.1
+v purrr     1.0.2     
+-- Conflicts ------------------------------------------ tidyverse_conflicts() --
+x dplyr::filter() masks stats::filter()
+x dplyr::lag()    masks stats::lag()
+i Use the conflicted package (<http://conflicted.r-lib.org/>) to force all conflicts to become errors
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{library}\NormalTok{(vdemdata)}
+\FunctionTok{library}\NormalTok{(glmnet)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+Warning: package 'glmnet' was built under R version 4.4.2
+\end{verbatim}
+
+\begin{verbatim}
+Loading required package: Matrix
+
+Attaching package: 'Matrix'
+
+The following objects are masked from 'package:tidyr':
+
+    expand, pack, unpack
+
+Loaded glmnet 4.1-8
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{load}\NormalTok{(}\StringTok{\textquotesingle{}WVS\_Cross{-}National\_Wave\_7\_rData\_v6\_0.rdata\textquotesingle{}}\NormalTok{)}
+\NormalTok{wvs7 }\OtherTok{\textless{}{-}} \StringTok{\textasciigrave{}}\AttributeTok{WVS\_Cross{-}National\_Wave\_7\_v6\_0}\StringTok{\textasciigrave{}} \SpecialCharTok{|\textgreater{}} \FunctionTok{as.tibble}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+Warning: `as.tibble()` was deprecated in tibble 2.0.0.
+i Please use `as_tibble()` instead.
+i The signature and semantics have changed, see `?as_tibble`.
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{load}\NormalTok{(}\StringTok{\textquotesingle{}WV6\_Data\_R\_v20201117.rdata\textquotesingle{}}\NormalTok{)}
+\NormalTok{wvs6 }\OtherTok{\textless{}{-}} \StringTok{\textasciigrave{}}\AttributeTok{WV6\_Data\_R\_v20201117}\StringTok{\textasciigrave{}} \SpecialCharTok{|\textgreater{}} \FunctionTok{as.tibble}\NormalTok{()}
+
+\NormalTok{workingvdem }\OtherTok{\textless{}{-}} \FunctionTok{tibble}\NormalTok{(vdem) }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{select}\NormalTok{(}\FunctionTok{c}\NormalTok{(country\_name, country\_text\_id, year, v2x\_polyarchy, v2x\_regime\_amb)) }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{filter}\NormalTok{(year }\SpecialCharTok{\textgreater{}=} \DecValTok{2005}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+First, I will clean the V-DEM dataset, adding a difference in the
+\texttt{v2x\_polyarchy} variable - that is, the measure of electoral
+democracy - and create a boolean variable for if the state has
+experienced a backsliding episode, defined as having its electoral
+democracy score decrease at least three years in a row. I will also
+ensure any NAs introduced are properly handled at this stage; since my
+focus is after 2010, I am removing the years before then, but will
+filter for year after the variables are introduced to limit NAs. The
+remaining are due to South Sudan not existing before 2011 and NAs
+introduced by attempting to get data after 2023, when the V-DEM dataset
+ends.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{workingvdem }\OtherTok{\textless{}{-}}\NormalTok{ workingvdem }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{group\_by}\NormalTok{(country\_text\_id) }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{arrange}\NormalTok{(year) }\SpecialCharTok{|\textgreater{}} \CommentTok{\# Should already be the case, but just in case it\textquotesingle{}s not}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{diff\_polyarchy =}\NormalTok{ v2x\_polyarchy }\SpecialCharTok{{-}} \FunctionTok{lag}\NormalTok{(v2x\_polyarchy)) }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{ungroup}\NormalTok{() }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{arrange}\NormalTok{(country\_text\_id)}
+
+\NormalTok{workingvdem }\OtherTok{\textless{}{-}}\NormalTok{ workingvdem }\SpecialCharTok{|\textgreater{}} \FunctionTok{group\_by}\NormalTok{(country\_text\_id) }\SpecialCharTok{|\textgreater{}}
+  \CommentTok{\# Did electoral democracy decrease in a non{-}entrenched autocracy?}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{backslided =}\NormalTok{ (diff\_polyarchy }\SpecialCharTok{\textless{}} \SpecialCharTok{{-}}\FloatTok{0.01}\NormalTok{) }\SpecialCharTok{\&}\NormalTok{ (v2x\_regime\_amb) }\SpecialCharTok{\textgreater{}} \DecValTok{3}\NormalTok{) }\SpecialCharTok{|\textgreater{}}
+  \CommentTok{\# Did it do it at least three years in a row?}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{backslided =}\NormalTok{ (backslided }\SpecialCharTok{\&} \FunctionTok{lag}\NormalTok{(backslided) }\SpecialCharTok{\&} \FunctionTok{lag}\NormalTok{(}\FunctionTok{lag}\NormalTok{(backslided))) }\SpecialCharTok{|}
+           \FunctionTok{lead}\NormalTok{(backslided) }\SpecialCharTok{\&}\NormalTok{ backslided }\SpecialCharTok{\&} \FunctionTok{lag}\NormalTok{(backslided) }\SpecialCharTok{|}
+           \FunctionTok{lead}\NormalTok{(}\FunctionTok{lead}\NormalTok{(backslided)) }\SpecialCharTok{\&} \FunctionTok{lead}\NormalTok{(backslided) }\SpecialCharTok{\&}\NormalTok{ backslided) }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{filter}\NormalTok{(year }\SpecialCharTok{\textgreater{}} \DecValTok{2009}\NormalTok{)}
+\CommentTok{\# 2022/2023 values (is NA for ones in backsliding. Let\textquotesingle{}s make that True.)}
+\NormalTok{workingvdem}\SpecialCharTok{$}\NormalTok{backslided }\OtherTok{\textless{}{-}} \FunctionTok{ifelse}\NormalTok{(}\FunctionTok{is.na}\NormalTok{(workingvdem}\SpecialCharTok{$}\NormalTok{backslided),}
+                                 \ConstantTok{TRUE}\NormalTok{,}
+\NormalTok{                                 workingvdem}\SpecialCharTok{$}\NormalTok{backslided)}
+
+\NormalTok{isnum\_lowna }\OtherTok{\textless{}{-}} \FunctionTok{apply}\NormalTok{(workingvdem, }\DecValTok{2}\NormalTok{, }\ControlFlowTok{function}\NormalTok{(col)\{}
+  \FunctionTok{sum}\NormalTok{(}\FunctionTok{is.na}\NormalTok{(col))}
+\NormalTok{\})}
+\CommentTok{\# The 1 is for South Sudan here.}
+\NormalTok{na\_rows }\OtherTok{\textless{}{-}} \FunctionTok{apply}\NormalTok{(workingvdem, }\DecValTok{1}\NormalTok{, }\ControlFlowTok{function}\NormalTok{(row)\{}\FunctionTok{sum}\NormalTok{(}\FunctionTok{is.na}\NormalTok{(row))\})}
+\NormalTok{missing\_rows }\OtherTok{\textless{}{-}}\NormalTok{ na\_rows }\SpecialCharTok{!=} \DecValTok{0}
+\NormalTok{workingvdem }\OtherTok{\textless{}{-}}\NormalTok{ workingvdem[}\SpecialCharTok{!}\NormalTok{missing\_rows,]}
+\end{Highlighting}
+\end{Shaded}
+
+I will do a similar level of cleaning for the two WVS surveys I have,
+but will work on them separately due to different questions asked in
+each wave. I will summarize answers by country to get a single value to
+compare to as well. To take care of negative values, which are NA in
+this case, I have attempted to remove them through taking the averages
+of a country's data and then set any remaining NA values to -1.
+Otherwise, the data tends to get messy. This may complicate the data,
+but ideally in a somewhat uniform fashion.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{wvs\_test }\OtherTok{\textless{}{-}}\NormalTok{ dplyr}\SpecialCharTok{::}\FunctionTok{select}\NormalTok{(wvs7, A\_YEAR, B\_COUNTRY\_ALPHA, }\FunctionTok{matches}\NormalTok{(}\StringTok{"\^{}Q([0{-}9]+)"}\NormalTok{)) }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{rename}\NormalTok{(}\AttributeTok{year =}\NormalTok{ A\_YEAR, }\AttributeTok{country\_text\_id =}\NormalTok{ B\_COUNTRY\_ALPHA)}
+
+\NormalTok{isnum }\OtherTok{\textless{}{-}} \FunctionTok{sapply}\NormalTok{(wvs\_test, is.numeric) }\CommentTok{\# Cols where we\textquotesingle{}re working with \#\textquotesingle{}s}
+\CommentTok{\# For those cols, remove all vals less than 0.}
+\NormalTok{wvs\_test[isnum] }\OtherTok{\textless{}{-}} \FunctionTok{lapply}\NormalTok{(wvs\_test[isnum], \textbackslash{}(x) }\FunctionTok{ifelse}\NormalTok{(x }\SpecialCharTok{\textless{}} \DecValTok{0}\NormalTok{, }\ConstantTok{NA}\NormalTok{, x))}
+
+\CommentTok{\# By country}
+\NormalTok{wvs\_test }\OtherTok{\textless{}{-}}\NormalTok{ wvs\_test }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{group\_by}\NormalTok{(year, country\_text\_id) }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{summarize}\NormalTok{(}\FunctionTok{across}\NormalTok{(}\FunctionTok{everything}\NormalTok{(), \textbackslash{}(x) }\FunctionTok{mean}\NormalTok{(x, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+`summarise()` has grouped output by 'year'. You can override using the
+`.groups` argument.
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{isnum }\OtherTok{\textless{}{-}} \FunctionTok{sapply}\NormalTok{(wvs\_test, is.numeric) }\CommentTok{\# Cols where we\textquotesingle{}re working with \#\textquotesingle{}s}
+\CommentTok{\# For those cols, set all remaining NAs to {-}1.}
+\NormalTok{wvs\_test[isnum] }\OtherTok{\textless{}{-}} \FunctionTok{lapply}\NormalTok{(wvs\_test[isnum], \textbackslash{}(x) }\FunctionTok{ifelse}\NormalTok{(}\FunctionTok{is.na}\NormalTok{(x), }\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{, x))}
+
+\NormalTok{merged }\OtherTok{\textless{}{-}} \FunctionTok{merge}\NormalTok{(workingvdem, wvs\_test, }\AttributeTok{by =} \FunctionTok{c}\NormalTok{(}\StringTok{"year"}\NormalTok{, }\StringTok{"country\_text\_id"}\NormalTok{)) }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{as\_tibble}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+To determine which features are the most important, I plan on utilizing
+a Lasso model. I initially used \texttt{diff\_polyarchy} for my metric
+to determine key features on and scaled it so its variance was
+significant, which allowed me to use lasso, but it does not allow me to
+get the top features since the variance is still rather low.
+
+Instead, I used the electoral democracy score (\texttt{v2x\_polyarchy}),
+which functioned a lot better, allowing me to find the top features and
+plotting things properly.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{grid }\OtherTok{\textless{}{-}} \DecValTok{10}\SpecialCharTok{\^{}}\FunctionTok{seq}\NormalTok{(}\DecValTok{10}\NormalTok{, }\SpecialCharTok{{-}}\DecValTok{2}\NormalTok{, }\AttributeTok{length =} \DecValTok{100}\NormalTok{)}
+\NormalTok{y7 }\OtherTok{\textless{}{-}}\NormalTok{ merged}\SpecialCharTok{$}\NormalTok{v2x\_polyarchy}
+\NormalTok{z7 }\OtherTok{\textless{}{-}}\NormalTok{ merged}\SpecialCharTok{$}\NormalTok{diff\_polyarchy }\SpecialCharTok{|\textgreater{}} \FunctionTok{scale}\NormalTok{()}
+\NormalTok{merged\_lasso }\OtherTok{\textless{}{-}}\NormalTok{ dplyr}\SpecialCharTok{::}\FunctionTok{select}\NormalTok{(merged, }\FunctionTok{matches}\NormalTok{(}\StringTok{"\^{}Q([0{-}9]+)"}\NormalTok{))}
+
+\NormalTok{lasso\_mod }\OtherTok{\textless{}{-}} \FunctionTok{glmnet}\NormalTok{(}\FunctionTok{data.matrix}\NormalTok{(merged\_lasso), y7, }\AttributeTok{alpha =} \DecValTok{1}\NormalTok{, }\AttributeTok{lambda =}\NormalTok{ grid)}
+\FunctionTok{plot}\NormalTok{(lasso\_mod)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+Warning in regularize.values(x, y, ties, missing(ties), na.rm = na.rm):
+collapsing to unique 'x' values
+\end{verbatim}
+
+\includegraphics{Episode_2_files/figure-pdf/lasso-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{set.seed}\NormalTok{(}\DecValTok{1}\NormalTok{)}
+\NormalTok{cv7\_out }\OtherTok{\textless{}{-}} \FunctionTok{cv.glmnet}\NormalTok{(}\FunctionTok{data.matrix}\NormalTok{(merged\_lasso), y7, }\AttributeTok{alpha =} \DecValTok{1}\NormalTok{)}
+\FunctionTok{plot}\NormalTok{(cv7\_out)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Episode_2_files/figure-pdf/lasso-2.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{top\_features7 }\OtherTok{\textless{}{-}} \FunctionTok{coef}\NormalTok{(cv7\_out, }\AttributeTok{s =} \StringTok{"lambda.1se"}\NormalTok{)}
+\NormalTok{top\_features7 }\OtherTok{\textless{}{-}}\NormalTok{ top\_features7[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{,]}
+\NormalTok{top\_features7 }\OtherTok{\textless{}{-}}\NormalTok{ top\_features7[top\_features7 }\SpecialCharTok{!=} \DecValTok{0}\NormalTok{]}
+\FunctionTok{sort}\NormalTok{(}\FunctionTok{abs}\NormalTok{(top\_features7), }\AttributeTok{decreasing =} \ConstantTok{TRUE}\NormalTok{) }\SpecialCharTok{|\textgreater{}} \FunctionTok{head}\NormalTok{(}\DecValTok{15}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+        Q211         Q239          Q38         Q212         Q271         Q225 
+0.1967821941 0.0559778577 0.0482793422 0.0480802239 0.0364528223 0.0228602491 
+         Q73           Q3        Q292I         Q182         Q262 
+0.0190355263 0.0151253037 0.0107729186 0.0044779803 0.0001399158 
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{lasso\_modz }\OtherTok{\textless{}{-}} \FunctionTok{glmnet}\NormalTok{(}\FunctionTok{data.matrix}\NormalTok{(merged\_lasso), z7, }\AttributeTok{alpha =} \DecValTok{1}\NormalTok{, }\AttributeTok{lambda =}\NormalTok{ grid)}
+\FunctionTok{plot}\NormalTok{(lasso\_modz)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+Warning in regularize.values(x, y, ties, missing(ties), na.rm = na.rm):
+collapsing to unique 'x' values
+\end{verbatim}
+
+\includegraphics{Episode_2_files/figure-pdf/lasso-3.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# However, can\textquotesingle{}t find most important features because everything\textquotesingle{}s so small!}
+\end{Highlighting}
+\end{Shaded}
+
+We can do the same process for the 6th wave, as seen below.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{wvs6\_test }\OtherTok{\textless{}{-}}\NormalTok{ dplyr}\SpecialCharTok{::}\FunctionTok{select}\NormalTok{(wvs6, B\_COUNTRY\_ALPHA, }\FunctionTok{matches}\NormalTok{(}\StringTok{"\^{}V([0{-}9]+)"}\NormalTok{)) }\SpecialCharTok{|\textgreater{}}
+\NormalTok{  dplyr}\SpecialCharTok{::}\FunctionTok{select}\NormalTok{(}\SpecialCharTok{{-}}\FunctionTok{c}\NormalTok{(V1, V2, V2A, V3)) }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{rename}\NormalTok{(}\AttributeTok{country\_text\_id =}\NormalTok{ B\_COUNTRY\_ALPHA)}
+
+\NormalTok{wvs6\_test}\SpecialCharTok{$}\NormalTok{year }\OtherTok{=} \DecValTok{2013} \CommentTok{\# no specific year, assuming 2013.}
+
+\NormalTok{isnum }\OtherTok{\textless{}{-}} \FunctionTok{sapply}\NormalTok{(wvs6\_test, is.numeric) }\CommentTok{\# Cols where we\textquotesingle{}re working with \#\textquotesingle{}s}
+\CommentTok{\# For those cols, remove all vals less than 0.}
+\NormalTok{wvs6\_test[isnum] }\OtherTok{\textless{}{-}} \FunctionTok{lapply}\NormalTok{(wvs6\_test[isnum], \textbackslash{}(x) }\FunctionTok{ifelse}\NormalTok{(x }\SpecialCharTok{\textless{}} \DecValTok{0}\NormalTok{, }\ConstantTok{NA}\NormalTok{, x))}
+
+\CommentTok{\# By country}
+\NormalTok{wvs6\_test }\OtherTok{\textless{}{-}}\NormalTok{ wvs6\_test }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{group\_by}\NormalTok{(year, country\_text\_id) }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{summarize}\NormalTok{(}\FunctionTok{across}\NormalTok{(}\FunctionTok{everything}\NormalTok{(), \textbackslash{}(x) }\FunctionTok{mean}\NormalTok{(x, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+`summarise()` has grouped output by 'year'. You can override using the
+`.groups` argument.
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{isnum }\OtherTok{\textless{}{-}} \FunctionTok{sapply}\NormalTok{(wvs6\_test, is.numeric) }\CommentTok{\# Cols where we\textquotesingle{}re working with \#\textquotesingle{}s}
+\CommentTok{\# For those cols, remove all vals less than 0.}
+\NormalTok{wvs6\_test[isnum] }\OtherTok{\textless{}{-}} \FunctionTok{lapply}\NormalTok{(wvs6\_test[isnum], \textbackslash{}(x) }\FunctionTok{ifelse}\NormalTok{(}\FunctionTok{is.na}\NormalTok{(x), }\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{, x))}
+
+\NormalTok{merged6 }\OtherTok{\textless{}{-}} \FunctionTok{merge}\NormalTok{(workingvdem, wvs6\_test, }\AttributeTok{by =} \FunctionTok{c}\NormalTok{(}\StringTok{"year"}\NormalTok{, }\StringTok{"country\_text\_id"}\NormalTok{)) }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{as\_tibble}\NormalTok{()}
+
+\NormalTok{y6 }\OtherTok{\textless{}{-}}\NormalTok{ merged6}\SpecialCharTok{$}\NormalTok{v2x\_polyarchy}
+\NormalTok{z6 }\OtherTok{\textless{}{-}}\NormalTok{ merged6}\SpecialCharTok{$}\NormalTok{diff\_polyarchy }\SpecialCharTok{|\textgreater{}} \FunctionTok{scale}\NormalTok{()}
+\NormalTok{merged6\_lasso }\OtherTok{\textless{}{-}}\NormalTok{ dplyr}\SpecialCharTok{::}\FunctionTok{select}\NormalTok{(merged6, }\FunctionTok{matches}\NormalTok{(}\StringTok{"\^{}V([0{-}9]+)"}\NormalTok{)) }\SpecialCharTok{|\textgreater{}}
+\NormalTok{  dplyr}\SpecialCharTok{::}\FunctionTok{select}\NormalTok{(}\SpecialCharTok{{-}}\FunctionTok{matches}\NormalTok{(}\StringTok{"\^{}v2x"}\NormalTok{)) }\CommentTok{\# Have to EXPLICITLY remove these.}
+
+\NormalTok{lasso\_modz }\OtherTok{\textless{}{-}} \FunctionTok{glmnet}\NormalTok{(}\FunctionTok{data.matrix}\NormalTok{(merged6\_lasso), z6, }\AttributeTok{alpha =} \DecValTok{1}\NormalTok{, }\AttributeTok{lambda =}\NormalTok{ grid)}
+\FunctionTok{plot}\NormalTok{(lasso\_modz)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+Warning in regularize.values(x, y, ties, missing(ties), na.rm = na.rm):
+collapsing to unique 'x' values
+\end{verbatim}
+
+\includegraphics{Episode_2_files/figure-pdf/wvs6-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# However, can\textquotesingle{}t find most important features because everything\textquotesingle{}s so small!}
+
+\NormalTok{lasso\_mod6 }\OtherTok{\textless{}{-}} \FunctionTok{glmnet}\NormalTok{(}\FunctionTok{data.matrix}\NormalTok{(merged6\_lasso), y6, }\AttributeTok{alpha =} \DecValTok{1}\NormalTok{, }\AttributeTok{lambda =}\NormalTok{ grid)}
+\FunctionTok{plot}\NormalTok{(lasso\_mod6)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+Warning in regularize.values(x, y, ties, missing(ties), na.rm = na.rm):
+collapsing to unique 'x' values
+\end{verbatim}
+
+\includegraphics{Episode_2_files/figure-pdf/wvs6-2.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{set.seed}\NormalTok{(}\DecValTok{1}\NormalTok{)}
+\NormalTok{cv6\_out }\OtherTok{\textless{}{-}} \FunctionTok{cv.glmnet}\NormalTok{(}\FunctionTok{data.matrix}\NormalTok{(merged6\_lasso), y6, }\AttributeTok{alpha =} \DecValTok{1}\NormalTok{)}
+\FunctionTok{plot}\NormalTok{(cv6\_out)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Episode_2_files/figure-pdf/wvs6-3.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{top\_features6 }\OtherTok{\textless{}{-}} \FunctionTok{coef}\NormalTok{(cv6\_out, }\AttributeTok{s =} \StringTok{"lambda.1se"}\NormalTok{)}
+\NormalTok{top\_features6 }\OtherTok{\textless{}{-}}\NormalTok{ top\_features6[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{,]}
+\NormalTok{top\_features6 }\OtherTok{\textless{}{-}}\NormalTok{ top\_features6[top\_features6 }\SpecialCharTok{!=} \DecValTok{0}\NormalTok{]}
+\FunctionTok{sort}\NormalTok{(}\FunctionTok{abs}\NormalTok{(top\_features6), }\AttributeTok{decreasing =} \ConstantTok{TRUE}\NormalTok{) }\SpecialCharTok{|\textgreater{}} \FunctionTok{head}\NormalTok{(}\DecValTok{15}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+       V115         V51         V52        V203          V6         V53 
+0.100867951 0.077406804 0.054297656 0.030849359 0.030637348 0.015164859 
+       V208     V215_11 
+0.009721931 0.002571395 
+\end{verbatim}
+
+\subsection{Discussion}\label{discussion}
+
+As these values give differing results, I'll be analyzing them
+separately before discussing them in tandem.
+
+\subsubsection{Wave 6}\label{wave-6}
+
+The top correlated variables with electoral democracy level after the
+cross-validation on WVS 6th wave are as follows: V115 \emph{(confidence
+in government)}, V51 \emph{(Do men make better political leaders?)}, V52
+\emph{(Is a university education more important for men over women?)},
+V203 \emph{(Is homosexuality justifiable?)}, V6 \emph{(Importance of
+leisure time)}, V53 \emph{(Do men make better business executives?)},
+V208 \emph{(Is it justifiable for a man to beat his wife?)}, and
+V215\_11 \emph{(Seeing oneself as part of CIS)}. You can also see the
+graph with them labeled below.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{merged6\_select }\OtherTok{\textless{}{-}}\NormalTok{ merged6\_lasso }\SpecialCharTok{|\textgreater{}}\NormalTok{ dplyr}\SpecialCharTok{::}\FunctionTok{select}\NormalTok{(}\FunctionTok{names}\NormalTok{(top\_features6))}
+\NormalTok{lasso\_m6s }\OtherTok{\textless{}{-}} \FunctionTok{glmnet}\NormalTok{(}\FunctionTok{data.matrix}\NormalTok{(merged6\_select), y6, }\AttributeTok{alpha =} \DecValTok{1}\NormalTok{, }\AttributeTok{lambda =}\NormalTok{ grid) }\CommentTok{\# y is still well{-}being}
+\FunctionTok{par}\NormalTok{(}\AttributeTok{mar =} \FunctionTok{c}\NormalTok{(}\DecValTok{5}\NormalTok{, }\DecValTok{4}\NormalTok{, }\DecValTok{4}\NormalTok{, }\DecValTok{8}\NormalTok{), }\AttributeTok{xpd =} \ConstantTok{TRUE}\NormalTok{) }\CommentTok{\# Need space for the legend}
+\FunctionTok{plot}\NormalTok{(lasso\_m6s)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+Warning in regularize.values(x, y, ties, missing(ties), na.rm = na.rm):
+collapsing to unique 'x' values
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Making the legend}
+\NormalTok{lasso\_coefs6 }\OtherTok{\textless{}{-}} \FunctionTok{coef}\NormalTok{(lasso\_m6s)}
+\NormalTok{var\_names6 }\OtherTok{\textless{}{-}} \FunctionTok{rownames}\NormalTok{(lasso\_coefs6)[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{]}
+\NormalTok{colors }\OtherTok{\textless{}{-}} \FunctionTok{seq\_len}\NormalTok{(}\FunctionTok{length}\NormalTok{(var\_names6))}
+\FunctionTok{legend}\NormalTok{(}\StringTok{"right"}\NormalTok{, }\AttributeTok{legend =}\NormalTok{ var\_names6, }\AttributeTok{col =}\NormalTok{ colors, }\AttributeTok{lty =} \DecValTok{1}\NormalTok{, }\AttributeTok{cex =} \FloatTok{0.8}\NormalTok{, }\AttributeTok{inset =} \FunctionTok{c}\NormalTok{(}\SpecialCharTok{{-}}\FloatTok{0.25}\NormalTok{, }\DecValTok{0}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Episode_2_files/figure-pdf/graph6-1.pdf}
+
+Some of these points make sense to discuss both electoral democracy and
+backsliding. Confidence in government quickly increasing in coefficient
+once it becomes non-zero reflects overall worries in governments
+resulting in increased autocracies. As states' populations trust their
+government less, they often turn to the extremes.
+
+Interestingly, the results of Wave 6's correlations are remarkably
+gendered. V51, 52, 53, and 208 are all among the top variables
+correlated, potentially revealing trends between strict gender norms and
+overall level of autocracy. Whether homosexuality is justifiable would
+also contribute to this mindset.
+
+The final two variables - importance of leisure time and seeing oneself
+as part of the Commonwealth of Independent States (CIS) may be
+additional noise, with the latter in particular potentially being due to
+the number of autocracies part of the post-Soviet sphere in 2013.
+
+Wave 6 identifies some important correlations in confidence in
+government and potential correlations between gendered ideology and
+autocracy, in addition to some noise resulting from where autocracies
+are. These findings seem to initially confirm an idea that confidence in
+governmental institutions is key to democracy, aligning with some
+aspects of the literature that find the \emph{lack} of democracy is due
+to a lack of trust in institutions. This wave also flags potential
+correlations with gender equity as well, as half of the variables it
+found as important had to do with if imbalances in gender are justified.
+
+\subsubsection{Wave 7}\label{wave-7}
+
+For the 7th wave, the most important questions are: Q211 \emph{(Openness
+to attending a political demonstration)}, Q239 \emph{(Opinion on
+religious law governing a country)}, Q38 \emph{(Is it a child's duty to
+take care of a sick parent?)}, Q212 \emph{(Openness to joining
+unofficial strikes), Q271 (Living with parents)}, Q225 \emph{(Frequency
+of opposition candidates prevented from running)}, Q73 \emph{(Confidence
+in country's parliament)}, Q3 \emph{(Importance of leisure time)}, Q292I
+\emph{(Belief politicians are incompetent or ineffective)}, Q182
+\emph{(Is homosexuality justifiable?)}, and Q262 \emph{(Age)}. Many of
+these reflect core foundations to democracy, but present novel questions
+to ask.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{merged7\_select }\OtherTok{\textless{}{-}}\NormalTok{ merged\_lasso }\SpecialCharTok{|\textgreater{}}\NormalTok{ dplyr}\SpecialCharTok{::}\FunctionTok{select}\NormalTok{(}\FunctionTok{names}\NormalTok{(top\_features7))}
+\NormalTok{lasso\_m7s }\OtherTok{\textless{}{-}} \FunctionTok{glmnet}\NormalTok{(}\FunctionTok{data.matrix}\NormalTok{(merged7\_select), y7, }\AttributeTok{alpha =} \DecValTok{1}\NormalTok{, }\AttributeTok{lambda =}\NormalTok{ grid) }\CommentTok{\# y is still well{-}being}
+\FunctionTok{par}\NormalTok{(}\AttributeTok{mar =} \FunctionTok{c}\NormalTok{(}\DecValTok{5}\NormalTok{, }\DecValTok{4}\NormalTok{, }\DecValTok{4}\NormalTok{, }\DecValTok{8}\NormalTok{), }\AttributeTok{xpd =} \ConstantTok{TRUE}\NormalTok{) }\CommentTok{\# Need space for the legend}
+\FunctionTok{plot}\NormalTok{(lasso\_m7s)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+Warning in regularize.values(x, y, ties, missing(ties), na.rm = na.rm):
+collapsing to unique 'x' values
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Making the legend}
+\NormalTok{lasso\_coefs7 }\OtherTok{\textless{}{-}} \FunctionTok{coef}\NormalTok{(lasso\_m7s)}
+\NormalTok{var\_names7 }\OtherTok{\textless{}{-}} \FunctionTok{rownames}\NormalTok{(lasso\_coefs7)[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{]}
+\NormalTok{colors }\OtherTok{\textless{}{-}} \FunctionTok{seq\_len}\NormalTok{(}\FunctionTok{length}\NormalTok{(var\_names7))}
+\FunctionTok{legend}\NormalTok{(}\StringTok{"right"}\NormalTok{, }\AttributeTok{legend =}\NormalTok{ var\_names7, }\AttributeTok{col =}\NormalTok{ colors, }\AttributeTok{lty =} \DecValTok{1}\NormalTok{, }\AttributeTok{cex =} \FloatTok{0.8}\NormalTok{, }\AttributeTok{inset =} \FunctionTok{c}\NormalTok{(}\SpecialCharTok{{-}}\FloatTok{0.25}\NormalTok{, }\DecValTok{0}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Episode_2_files/figure-pdf/graph7-1.pdf}
+
+From Wave 7, we can see notable trends in political demonstrations
+highly correlating with overall level of electoral democracy; Q211 and
+Q212 are among the first variables given coefficients, and Q211 has the
+largest overall effect. This makes sense, as generally, an increased
+level to take public action for political reasons would increase the
+level of accountability leaders have to their people.
+
+Additionally, Wave 7 denotes variables like confidence in parliament,
+belief politicians are incompetent or ineffective, and frequency of
+opposition candidates being prevented from running. These all directly
+tie into whether electoral democracy is healthy, as if opposition
+candidates are not allowed to run, overall level of democracy decreases.
+Beliefs that the government and its actors are ineffective also tie into
+what Wave 6 revealed, as this can decrease trust in democracy being able
+to function well.
+
+Interestingly, importance in leisure time and belief that homosexuality
+is justifiable were both correlated with electoral democracy level in
+Waves 6 and 7, potentially denoting some common social issues
+democracies promote. However, they are not as directly tied to the level
+of democracy as other variables are.
+
+\subsection{Conclusion}\label{conclusion}
+
+While the global shift to autocracy is bolstered by an overall
+frustration in democratic institutions, it is by no means the only
+factor. This research confirms the theoretical claim that backsliding is
+correlated with an increase in frustrations with democratic
+institutions, but also offers other potential variables like democratic
+activism and gender equity, which have potential for further theoretical
+analysis.
+
+My initial hypothesis of frustration in institutions causing backsliding
+seems to hold, as trust in institutions is strongly correlated with
+government type. In particular, V115 (that of confidence in government
+during Wave 6 of the World Values Survey) was the variable most strongly
+correlated with government type for that set of data.
+
+However, Wave 7's results posit an additional variable: that of
+democratic activism. Two of the most correlated variables are
+specifically about being open to political action. While further
+research is required to confirm its causality, this correlation
+implicates backsliding not only occurs due to frustration with
+governments but also as a result of a low will to protest for political
+purposes.
+
+Thus, the level of democracy in a state - at least to some extent - is
+affected by the values of its population. If people are dissatisfied
+with the government and will rarely take political action, an autocratic
+regime is more likely. Using these correlations, we may be able to
+predict backsliding for future states, furthering our understanding of
+this shift from democracy in an ever-changing world.
+
+\subsection{References}\label{references}
+
+\phantomsection\label{refs}
+\begin{CSLReferences}{1}{0}
+\bibitem[\citeproctext]{ref-carothersUnderstandingRespondingGlobal2022}
+Carothers, Thomas, and Benjamin Press. {``Understanding and {Responding}
+to {Global Democratic Backsliding}.''} Carnegie Endowment for
+International Peace, October 2022.
+
+\bibitem[\citeproctext]{ref-cooleyExitHegemonyUnraveling2020}
+Cooley, Alexander, and Daniel Nexon. \emph{Exit from {Hegemony}: {The
+Unraveling} of the {American Global Order}}. Oxford, New York: Oxford
+University Press, 2020.
+
+\bibitem[\citeproctext]{ref-haggardBackslidingDemocraticRegress2021}
+Haggard, Stephan, and Robert Kaufman. \emph{Backsliding: {Democratic
+Regress} in the {Contemporary World}}. Elements in {Political Economy}
+9. Cambridge University Press, 2021.
+
+\bibitem[\citeproctext]{ref-haggardAnatomyDemocraticBacksliding2021}
+---------. {``The {Anatomy} of {Democratic Backsliding}.''}
+\emph{Journal of Democracy} 32, no. 4 (2021): 27--41.
+
+\bibitem[\citeproctext]{ref-levitskyHowDemocracies2018a}
+Levitsky, Steven, and Daniel Ziblatt. \emph{How {Democracies Die}}.
+First edition. New York: Crown, 2018.
+
+\bibitem[\citeproctext]{ref-meyerroseInternationalSourcesDemocratic2021}
+Meyerrose, Anna M. {``International {Sources} of {Democratic
+Backsliding}.''} In \emph{Routledge {Handbook} of {Illiberalism}}.
+Routledge, 2021.
+
+\bibitem[\citeproctext]{ref-meyerroseUnintendedConsequencesDemocracy2020}
+---------. {``The {Unintended Consequences} of {Democracy Promotion}:
+{International Organizations} and {Democratic Backsliding}.''}
+\emph{Comparative Political Studies} 53, no. 10-11 (September 2020):
+1547--81. \url{https://doi.org/10.1177/0010414019897689}.
+
+\bibitem[\citeproctext]{ref-nordDemocracyReport20242024}
+Nord, Marina, Martin Lundstedt, David Altman, Fabio Angiolillo, Cecilia
+Borella, Tiago Fernandes, Lisa Gastaldi, Ana Good God, Natalia Natsika,
+and Staffan Lindberg. {``Democracy {Report} 2024: {Democracy Winning}
+and {Losing} at the {Ballot}.''} University of Gothenburg: V-Dem
+Institute, March 2024.
+
+\end{CSLReferences}
+
+
+
+
+\end{document}
