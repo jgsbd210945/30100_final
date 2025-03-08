@@ -1,6 +1,8 @@
 library(tidyverse)
 library(vdemdata)
 library(glmnet)
+library(tidymodels)
+library(xgboost)
 
 load('Data/WVS_Cross-National_Wave_7_rData_v6_0.rdata')
 wvs7 <- `WVS_Cross-National_Wave_7_v6_0` |> as.tibble()
@@ -39,10 +41,6 @@ na_rows <- apply(workingvdem, 1, function(row){sum(is.na(row))})
 missing_rows <- na_rows != 0
 workingvdem <- workingvdem[!missing_rows,]
 
-
-
-
-
 wvs_test <- dplyr::select(wvs7, A_YEAR, B_COUNTRY_ALPHA, matches("^Q([0-9]+)")) |>
   rename(year = A_YEAR, country_text_id = B_COUNTRY_ALPHA)
 
@@ -60,12 +58,6 @@ wvs_test[isnum] <- lapply(wvs_test[isnum], \(x) ifelse(is.na(x), -1, x))
 
 merged <- merge(workingvdem, wvs_test, by = c("year", "country_text_id")) |>
   as_tibble()
-
-#merged |>
-#  dplyr::select(-c(year, country_text_id, country_name)) |>
-#  cor() |>
-#  corrplot::corrplot(method = "number", type = "upper") # Unhelpful!
-
 
 grid <- 10^seq(10, -2, length = 100)
 y <- merged$v2x_polyarchy
@@ -99,16 +91,17 @@ colors <- seq_len(length(var_names))
 legend("right", legend = var_names, col = colors, lty = 1, cex = 0.8, inset = c(-0.25, 0))
 
 
-
 ## Preprocessing
+model_data <- dplyr::select(merged, country_name, v2x_polyarchy, diff_polyarchy, matches(var_names))
+
 set.seed(1)
-data_split <- initial_split(listings, prop = 0.75)
+data_split <- initial_split(model_data, prop = 0.5)
 train_data <- training(data_split)
 test_data  <- testing(data_split)
 
-listings_rec <- recipe(log_price ~ ., data = train_data) |>
+rec <- recipe(v2x_polyarchy ~ ., data = train_data) |>
   step_select(all_numeric()) |>
-  update_role(price, new_role = "ID")
+  update_role(diff_polyarchy, new_role = "ID")
 
 ## Cross-validation object
 cv_folds <- vfold_cv(train_data, v = 5, repeats = 1)
@@ -120,9 +113,57 @@ model_xgboost <- boost_tree(trees = 100, mtry=5, learn_rate = tune()) |>
 
 xg_grid <- grid_regular(learn_rate(), levels = 5)
 
-listings_wflow <- workflow() |>
+wf <- workflow() |>
   add_model(model_xgboost) |>
-  add_recipe(listings_rec)
+  add_recipe(rec)
+
+model_res <- wf |>
+  tune_grid(resamples = cv_folds,
+            grid = xg_grid,
+            control = control_grid(save_pred = TRUE))
+collect_metrics(model_res)
+
+best_tree <- model_res |> select_best(metric = "rmse")
+final_wf <- wf |> finalize_workflow(best_tree)
+final_fit <- final_wf |> last_fit(data_split)
+final_fit |> collect_metrics()
+
+final_fit |>
+  collect_predictions() |>
+  ggplot(aes(x = v2x_polyarchy, y = .pred)) +
+  geom_point() +
+  geom_abline(color = 'red', linewidth = 1) +
+  labs(title = "Comparison of Prediction vs. Actual Electoral Democracy Score") +
+  xlab("Actual Electoral Democracy Score") +
+  ylab("Predicted Electoral Democracy Score")
+
+## Hmm...How about backsliding?
+rec_diff <- recipe(diff_polyarchy ~ ., data = train_data) |>
+  step_select(all_numeric()) |>
+  update_role(v2x_polyarchy, new_role = "ID")
+wf_diff <- workflow() |>
+  add_model(model_xgboost) |>
+  add_recipe(rec_diff)
+
+model_diff <- wf_diff |>
+  tune_grid(resamples = cv_folds,
+            grid = xg_grid,
+            control = control_grid(save_pred = TRUE))
+collect_metrics(model_res)
+
+best_tree_diff <- model_diff |> select_best(metric = "rmse")
+final_wf_diff <- wf_diff |> finalize_workflow(best_tree_diff)
+final_diff <- final_wf_diff |> last_fit(data_split)
+final_diff |> collect_metrics()
+
+final_diff |>
+  collect_predictions() |>
+  ggplot(aes(x = diff_polyarchy, y = .pred)) +
+  geom_point() +
+  geom_abline(color = 'red', linewidth = 1) +
+  labs(title = "Comparison of Prediction vs. Actual Scaled Difference in Electoral Democracy Score") +
+  xlab("Actual Difference") +
+  ylab("Predicted Difference")
 
 
 

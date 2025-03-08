@@ -1,0 +1,259 @@
+---
+title-block-banner: true
+title-block-banner-color: "#3F3F3F"
+title: "Shifts in Values, Shifts in Democracy"
+subtitle: "Identifying Correlations between World Values Survey Responses and Level of Electoral Democracy"
+author:
+  - name: Jason Gordon
+    email: jagordon@uchicago.edu"
+    affiliation: 
+      - name: The University of Chicago
+        city: Chicago
+        state: IL
+        url: https://www.uchicago.edu/
+date: March 13, 2025
+format: 
+  pdf:
+    keep-tex: true
+    latex-engine: xelatex
+bibliography: 30100_bibliography.bib
+csl: chicago-fullnote-bibliography.csl
+---
+
+\newpage
+\tableofcontents
+\newpage
+
+## Intoduction
+
+Democratic backsliding has increasingly taken hold of the world, with the Varieties of Democracy (V-DEM) 2024 Democracy Report identifying 28 cases of backsliding in democracies, 13 of which having reverted to autocracies since the episode began [@nordDemocracyReport20242024]. As backsliding occurs within democracies with elected leaders, there is seemingly popular support *against* democracy in these countries — at least given the results of these elections.
+
+In this report, I plan to inspect if the wave of autocratization in democracies is the result of a shift in values against democracy, and which values are the most important for the shift to autocracy. As the number of cases of backsliding increases, it becomes increasingly important to understand why people would vote for actors that seek to challenge the core foundation of democratic institutions; with this knowledge, we may be able to further understand when cases of backsliding can happen.
+
+First, I will be summarizing existing literature on democratic backsliding, identifying the tension in what causes backsliding. Then, I will conduct some exploratory data analysis and model fitting of my dataset, using Lasso to identify notable variables. Finally, I will discuss if these variables have importance in conducting future research.
+
+## Existing Literature
+
+Over the past twenty-five years, there has been considerable discussion about the causes of democratic backsliding - defined generally as the gradual breakdown of democratic institutions through nonviolent — and often, legal — means.[@haggardBackslidingDemocraticRegress2021; @levitskyHowDemocracies2018a] Most discussions claim polarization is the core idea behind why democracies denigrate, but little is known about the shifts in values to *why* it happens.
+
+Haggard and Kaufman (2021a) discuss backsliding through the lens of dysfunction of a lack of trust in institutions, which permit autocrats to capture the executive.[@haggardAnatomyDemocraticBacksliding2021] These scholars point to an overall frustration with the system leading to polarization, as anti-system actors may be able to succeed in taking power if the population has no faith that the system will perform well with them. Other literature seems to correlate parts of this claim, with Cooley and Nexon (2020) arguing that these are akin to a "counter-order" movement, made in rejection to the liberal system of ordering.[@cooleyExitHegemonyUnraveling2020] Generally, these scholars agree that movements and politicians rejecting the structure of governance as it stands currently obtain success, with Haggard and Kaufman finding it is due to dissatisfaction in institutions.
+
+However, Carothers and Press (2022) expand on this discussion, first limiting their discussion to the Global South and post-communist Europe, and delivering three separate categories of democratic backsliding, all of which create differing interpretations of the values behind backsliding. They state that backsliding can be caused by grievance-fueled illiberalism, agreeing with future literature that frustrations in institutions can drive backsliding; opportunistic authoritarianism, where autocrats act as political entrepreneurs to obtain power; and entrenched-interest revanchinism, where an interest group uses undemocratic means to reassert its claim. [@carothersUnderstandingRespondingGlobal2022] Carothers and Press's framework gives an idea for the potential variance in the viewpoints behind backsliding, claiming it is not as simple as people being mad about institutions failing them.
+
+An additional perspective claims that backsliding isn't domestic in nature, but international. One such scholar, Anna Meyerrose (2020; 2021), finds that instead of backsliding being triggered by domestic parties, that international organizations (IOs) are to blame. She claims that because IOs focus on elections and an increase in executive power in their democracy promotion, in addition to removing some areas of policy for political parties to divide on, potential autocrats have an easier time gaining and maintaining power. [@meyerroseInternationalSourcesDemocratic2021; @meyerroseUnintendedConsequencesDemocracy2020] Deviating from other arguments, this branch of literature finds that while there may be domestic issues, structural problems make backsliding *much* more likely. As a result, backsliding may have nothing to do with values populations have.
+
+I intend to put these differing claims to the test. While I expect that grievances with institutions play a not insignificant role in democratic backsliding, I do expect there to be variance in how much of a role it plays. Some states may backslide due to structural issues, or for electing a leader who at first may adhere to democratic norms, but then turn against the system later in their term.
+
+## Data
+
+I plan to combine the data from V-DEM's 2024 Democracy Report and the World Values Survey to identify correlations WVS's answers and overall level of democracy. I'm looking to use waves 6 and 7 of the WVS report, so will only need V-DEM's data beyond 2010.
+
+```{r setup}
+library(tidyverse)
+library(vdemdata)
+library(glmnet)
+
+load('WVS_Cross-National_Wave_7_rData_v6_0.rdata')
+wvs7 <- `WVS_Cross-National_Wave_7_v6_0` |> as.tibble()
+load('WV6_Data_R_v20201117.rdata')
+wvs6 <- `WV6_Data_R_v20201117` |> as.tibble()
+
+workingvdem <- tibble(vdem) |>
+  select(c(country_name, country_text_id, year, v2x_polyarchy, v2x_regime_amb)) |>
+  filter(year >= 2005)
+```
+
+First, I will clean the V-DEM dataset, adding a difference in the `v2x_polyarchy` variable - that is, the measure of electoral democracy - and create a boolean variable for if the state has experienced a backsliding episode, defined as having its electoral democracy score decrease at least three years in a row. I will also ensure any NAs introduced are properly handled at this stage; since my focus is after 2010, I am removing the years before then, but will filter for year after the variables are introduced to limit NAs. The remaining are due to South Sudan not existing before 2011 and NAs introduced by attempting to get data after 2023, when the V-DEM dataset ends.
+
+```{r cleaningvdem}
+workingvdem <- workingvdem |>
+  group_by(country_text_id) |>
+  arrange(year) |> # Should already be the case, but just in case it's not
+  mutate(diff_polyarchy = v2x_polyarchy - lag(v2x_polyarchy)) |>
+  ungroup() |>
+  arrange(country_text_id)
+
+workingvdem <- workingvdem |> group_by(country_text_id) |>
+  # Did electoral democracy decrease in a non-entrenched autocracy?
+  mutate(backslided = (diff_polyarchy < -0.01) & (v2x_regime_amb) > 3) |>
+  # Did it do it at least three years in a row?
+  mutate(backslided = (backslided & lag(backslided) & lag(lag(backslided))) |
+           lead(backslided) & backslided & lag(backslided) |
+           lead(lead(backslided)) & lead(backslided) & backslided) |>
+  filter(year > 2009)
+# 2022/2023 values (is NA for ones in backsliding. Let's make that True.)
+workingvdem$backslided <- ifelse(is.na(workingvdem$backslided),
+                                 TRUE,
+                                 workingvdem$backslided)
+
+isnum_lowna <- apply(workingvdem, 2, function(col){
+  sum(is.na(col))
+})
+# The 1 is for South Sudan here.
+na_rows <- apply(workingvdem, 1, function(row){sum(is.na(row))})
+missing_rows <- na_rows != 0
+workingvdem <- workingvdem[!missing_rows,]
+```
+
+I will do a similar level of cleaning for the two WVS surveys I have, but will work on them separately due to different questions asked in each wave. I will summarize answers by country to get a single value to compare to as well. To take care of negative values, which are NA in this case, I have attempted to remove them through taking the averages of a country's data and then set any remaining NA values to -1. Otherwise, the data tends to get messy. This may complicate the data, but ideally in a somewhat uniform fashion.
+
+```{r wvs7}
+wvs_test <- dplyr::select(wvs7, A_YEAR, B_COUNTRY_ALPHA, matches("^Q([0-9]+)")) |>
+  rename(year = A_YEAR, country_text_id = B_COUNTRY_ALPHA)
+
+isnum <- sapply(wvs_test, is.numeric) # Cols where we're working with #'s
+# For those cols, remove all vals less than 0.
+wvs_test[isnum] <- lapply(wvs_test[isnum], \(x) ifelse(x < 0, NA, x))
+
+# By country
+wvs_test <- wvs_test |>
+  group_by(year, country_text_id) |>
+  summarize(across(everything(), \(x) mean(x, na.rm = TRUE)))
+
+isnum <- sapply(wvs_test, is.numeric) # Cols where we're working with #'s
+# For those cols, set all remaining NAs to -1.
+wvs_test[isnum] <- lapply(wvs_test[isnum], \(x) ifelse(is.na(x), -1, x))
+
+merged <- merge(workingvdem, wvs_test, by = c("year", "country_text_id")) |>
+  as_tibble()
+```
+
+To determine which features are the most important, I plan on utilizing a Lasso model. I initially used `diff_polyarchy` for my metric to determine key features on and scaled it so its variance was significant, which allowed me to use lasso, but it does not allow me to get the top features since the variance is still rather low.
+
+Instead, I used the electoral democracy score (`v2x_polyarchy`), which functioned a lot better, allowing me to find the top features and plotting things properly.
+
+```{r lasso}
+grid <- 10^seq(10, -2, length = 100)
+y7 <- merged$v2x_polyarchy
+z7 <- merged$diff_polyarchy |> scale()
+merged_lasso <- dplyr::select(merged, matches("^Q([0-9]+)"))
+
+lasso_mod <- glmnet(data.matrix(merged_lasso), y7, alpha = 1, lambda = grid)
+plot(lasso_mod)
+
+set.seed(1)
+cv7_out <- cv.glmnet(data.matrix(merged_lasso), y7, alpha = 1)
+plot(cv7_out)
+
+top_features7 <- coef(cv7_out, s = "lambda.1se")
+top_features7 <- top_features7[-1,]
+top_features7 <- top_features7[top_features7 != 0]
+sort(abs(top_features7), decreasing = TRUE) |> head(15)
+
+lasso_modz <- glmnet(data.matrix(merged_lasso), z7, alpha = 1, lambda = grid)
+plot(lasso_modz)
+# However, can't find most important features because everything's so small!
+```
+
+We can do the same process for the 6th wave, as seen below.
+
+```{r wvs6}
+wvs6_test <- dplyr::select(wvs6, B_COUNTRY_ALPHA, matches("^V([0-9]+)")) |>
+  dplyr::select(-c(V1, V2, V2A, V3)) |>
+  rename(country_text_id = B_COUNTRY_ALPHA)
+
+wvs6_test$year = 2013 # no specific year, assuming 2013.
+
+isnum <- sapply(wvs6_test, is.numeric) # Cols where we're working with #'s
+# For those cols, remove all vals less than 0.
+wvs6_test[isnum] <- lapply(wvs6_test[isnum], \(x) ifelse(x < 0, NA, x))
+
+# By country
+wvs6_test <- wvs6_test |>
+  group_by(year, country_text_id) |>
+  summarize(across(everything(), \(x) mean(x, na.rm = TRUE)))
+isnum <- sapply(wvs6_test, is.numeric) # Cols where we're working with #'s
+# For those cols, remove all vals less than 0.
+wvs6_test[isnum] <- lapply(wvs6_test[isnum], \(x) ifelse(is.na(x), -1, x))
+
+merged6 <- merge(workingvdem, wvs6_test, by = c("year", "country_text_id")) |>
+  as_tibble()
+
+y6 <- merged6$v2x_polyarchy
+z6 <- merged6$diff_polyarchy |> scale()
+merged6_lasso <- dplyr::select(merged6, matches("^V([0-9]+)")) |>
+  dplyr::select(-matches("^v2x")) # Have to EXPLICITLY remove these.
+
+lasso_modz <- glmnet(data.matrix(merged6_lasso), z6, alpha = 1, lambda = grid)
+plot(lasso_modz)
+# However, can't find most important features because everything's so small!
+
+lasso_mod6 <- glmnet(data.matrix(merged6_lasso), y6, alpha = 1, lambda = grid)
+plot(lasso_mod6)
+
+set.seed(1)
+cv6_out <- cv.glmnet(data.matrix(merged6_lasso), y6, alpha = 1)
+plot(cv6_out)
+
+top_features6 <- coef(cv6_out, s = "lambda.1se")
+top_features6 <- top_features6[-1,]
+top_features6 <- top_features6[top_features6 != 0]
+sort(abs(top_features6), decreasing = TRUE) |> head(15)
+```
+
+## Discussion
+
+As these values give differing results, I'll be analyzing them separately before discussing them in tandem.
+
+### Wave 6
+
+The top correlated variables with electoral democracy level after the cross-validation on WVS 6th wave are as follows: V115 *(confidence in government)*, V51 *(Do men make better political leaders?)*, V52 *(Is a university education more important for men over women?)*, V203 *(Is homosexuality justifiable?)*, V6 *(Importance of leisure time)*, V53 *(Do men make better business executives?)*, V208 *(Is it justifiable for a man to beat his wife?)*, and V215_11 *(Seeing oneself as part of CIS)*. You can also see the graph with them labeled below.
+
+```{r graph6}
+merged6_select <- merged6_lasso |> dplyr::select(names(top_features6))
+lasso_m6s <- glmnet(data.matrix(merged6_select), y6, alpha = 1, lambda = grid) # y is still well-being
+par(mar = c(5, 4, 4, 8), xpd = TRUE) # Need space for the legend
+plot(lasso_m6s)
+
+# Making the legend
+lasso_coefs6 <- coef(lasso_m6s)
+var_names6 <- rownames(lasso_coefs6)[-1]
+colors <- seq_len(length(var_names6))
+legend("right", legend = var_names6, col = colors, lty = 1, cex = 0.8, inset = c(-0.25, 0))
+```
+
+Some of these points make sense to discuss both electoral democracy and backsliding. Confidence in government quickly increasing in coefficient once it becomes non-zero reflects overall worries in governments resulting in increased autocracies. As states' populations trust their government less, they often turn to the extremes.
+
+Interestingly, the results of Wave 6's correlations are remarkably gendered. V51, 52, 53, and 208 are all among the top variables correlated, potentially revealing trends between strict gender norms and overall level of autocracy. Whether homosexuality is justifiable would also contribute to this mindset.
+
+The final two variables - importance of leisure time and seeing oneself as part of the Commonwealth of Independent States (CIS) may be additional noise, with the latter in particular potentially being due to the number of autocracies part of the post-Soviet sphere in 2013.
+
+Wave 6 identifies some important correlations in confidence in government and potential correlations between gendered ideology and autocracy, in addition to some noise resulting from where autocracies are. These findings seem to initially confirm an idea that confidence in governmental institutions is key to democracy, aligning with some aspects of the literature that find the *lack* of democracy is due to a lack of trust in institutions. This wave also flags potential correlations with gender equity as well, as half of the variables it found as important had to do with if imbalances in gender are justified.
+
+### Wave 7
+
+For the 7th wave, the most important questions are: Q211 *(Openness to attending a political demonstration)*, Q239 *(Opinion on religious law governing a country)*, Q38 *(Is it a child's duty to take care of a sick parent?)*, Q212 *(Openness to joining unofficial strikes), Q271 (Living with parents)*, Q225 *(Frequency of opposition candidates prevented from running)*, Q73 *(Confidence in country's parliament)*, Q3 *(Importance of leisure time)*, Q292I *(Belief politicians are incompetent or ineffective)*, Q182 *(Is homosexuality justifiable?)*, and Q262 *(Age)*. Many of these reflect core foundations to democracy, but present novel questions to ask.
+
+```{r graph7}
+merged7_select <- merged_lasso |> dplyr::select(names(top_features7))
+lasso_m7s <- glmnet(data.matrix(merged7_select), y7, alpha = 1, lambda = grid) # y is still well-being
+par(mar = c(5, 4, 4, 8), xpd = TRUE) # Need space for the legend
+plot(lasso_m7s)
+
+# Making the legend
+lasso_coefs7 <- coef(lasso_m7s)
+var_names7 <- rownames(lasso_coefs7)[-1]
+colors <- seq_len(length(var_names7))
+legend("right", legend = var_names7, col = colors, lty = 1, cex = 0.8, inset = c(-0.25, 0))
+```
+
+From Wave 7, we can see notable trends in political demonstrations highly correlating with overall level of electoral democracy; Q211 and Q212 are among the first variables given coefficients, and Q211 has the largest overall effect. This makes sense, as generally, an increased level to take public action for political reasons would increase the level of accountability leaders have to their people. 
+
+Additionally, Wave 7 denotes variables like confidence in parliament, belief politicians are incompetent or ineffective, and frequency of opposition candidates being prevented from running. These all directly tie into whether electoral democracy is healthy, as if opposition candidates are not allowed to run, overall level of democracy decreases. Beliefs that the government and its actors are ineffective also tie into what Wave 6 revealed, as this can decrease trust in democracy being able to function well.
+
+Interestingly, importance in leisure time and belief that homosexuality is justifiable were both correlated with electoral democracy level in Waves 6 and 7, potentially denoting some common social issues democracies promote. However, they are not as directly tied to the level of democracy as other variables are.
+
+## Conclusion
+
+While the global shift to autocracy is bolstered by an overall frustration in democratic institutions, it is by no means the only factor. This research confirms the theoretical claim that backsliding is correlated with an increase in frustrations with democratic institutions, but also offers other potential variables like democratic activism and gender equity, which have potential for further theoretical analysis.
+
+My initial hypothesis of frustration in institutions causing backsliding seems to hold, as trust in institutions is strongly correlated with government type. In particular, V115 (that of confidence in government during Wave 6 of the World Values Survey) was the variable most strongly correlated with government type for that set of data.
+
+However, Wave 7's results posit an additional variable: that of democratic activism. Two of the most correlated variables are specifically about being open to political action. While further research is required to confirm its causality, this correlation implicates backsliding not only occurs due to frustration with governments but also as a result of a low will to protest for political purposes.
+
+Thus, the level of democracy in a state - at least to some extent - is affected by the values of its population. If people are dissatisfied with the government and will rarely take political action, an autocratic regime is more likely. Using these correlations, we may be able to predict backsliding for future states, furthering our understanding of this shift from democracy in an ever-changing world.
+
+## References
+
+::: {#refs}
+:::
