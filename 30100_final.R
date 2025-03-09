@@ -58,6 +58,7 @@ wvs_test[isnum] <- lapply(wvs_test[isnum], \(x) ifelse(is.na(x), -1, x))
 
 merged <- merge(workingvdem, wvs_test, by = c("year", "country_text_id")) |>
   as_tibble()
+merged$backslided <- factor(merged$backslided)
 
 grid <- 10^seq(10, -2, length = 100)
 y <- merged$v2x_polyarchy
@@ -92,7 +93,7 @@ legend("right", legend = var_names, col = colors, lty = 1, cex = 0.8, inset = c(
 
 
 ## Preprocessing
-model_data <- dplyr::select(merged, country_name, v2x_polyarchy, diff_polyarchy, matches(var_names))
+model_data <- dplyr::select(merged, country_name, v2x_polyarchy, diff_polyarchy, backslided, matches(var_names))
 
 set.seed(1)
 data_split <- initial_split(model_data, prop = 0.5)
@@ -149,7 +150,7 @@ model_diff <- wf_diff |>
   tune_grid(resamples = cv_folds,
             grid = xg_grid,
             control = control_grid(save_pred = TRUE))
-collect_metrics(model_res)
+collect_metrics(model_diff)
 
 best_tree_diff <- model_diff |> select_best(metric = "rmse")
 final_wf_diff <- wf_diff |> finalize_workflow(best_tree_diff)
@@ -164,6 +165,76 @@ final_diff |>
   labs(title = "Comparison of Prediction vs. Actual Scaled Difference in Electoral Democracy Score") +
   xlab("Actual Difference") +
   ylab("Predicted Difference")
+
+# On All the data...
+
+set.seed(1)
+full_split <- initial_split(merged, prop = 0.5)
+train_full <- training(full_split)
+test_full <- testing(full_split)
+
+rec_full <- recipe(v2x_polyarchy ~ ., data = train_full) |>
+  step_select(all_numeric()) |>
+  update_role(year, diff_polyarchy, v2x_regime_amb, new_role = "ID") #Incl. libdem!
+wf_full <- workflow() |>
+  add_model(model_xgboost) |>
+  add_recipe(rec_full)
+
+cv_full <- vfold_cv(train_full, v = 5, repeats = 1)
+
+model_full <- wf_full |>
+  tune_grid(resamples = cv_full,
+            grid = xg_grid,
+            control = control_grid(save_pred = TRUE))
+collect_metrics(model_full)
+
+best_tree_full <- model_full |> select_best(metric = "rmse")
+final_wf_full <- wf_full |> finalize_workflow(best_tree_full)
+final_full <- final_wf_full |> last_fit(full_split)
+final_full |> collect_metrics()
+
+final_full |>
+  collect_predictions() |>
+  ggplot(aes(x = v2x_polyarchy, y = .pred)) +
+  geom_point() +
+  geom_abline(color = 'red', linewidth = 1) +
+  labs(title = "Comparison of Prediction vs. Actual Electoral Democracy Score") +
+  xlab("Actual Difference") +
+  ylab("Predicted Difference")
+
+
+# Final thought...classification?
+rec <- recipe(backslided ~ ., data = train_data) |>
+  step_select(backslided, all_numeric()) |>
+  update_role(v2x_polyarchy, diff_polyarchy, new_role = "ID")
+
+## Cross-validation object
+cv_folds <- vfold_cv(train_data, v = 5, repeats = 1)
+
+# xgboost
+model_xgboost <- boost_tree(trees = 100, mtry=5, learn_rate = tune()) |> 
+  set_mode("classification") |> 
+  set_engine("xgboost")
+
+xg_grid <- grid_regular(learn_rate(), levels = 5)
+
+wf <- workflow() |>
+  add_model(model_xgboost) |>
+  add_recipe(rec)
+
+model_res <- wf |>
+  tune_grid(resamples = cv_folds,
+            grid = xg_grid,
+            control = control_grid(save_pred = TRUE))
+collect_metrics(model_res)
+
+best_tree <- model_res |> select_best(metric = "accuracy")
+final_wf <- wf |> finalize_workflow(best_tree)
+final_fit <- final_wf |> last_fit(data_split)
+final_fit |> collect_metrics()
+
+
+
 
 
 
