@@ -26,7 +26,7 @@ workingvdem <- tibble(vdem) |>
   ungroup() |>
   filter(year > 2009) |>
   arrange(country_text_id) |>
-  select(country_name, country_text_id, year, v2x_polyarchy, v2x_libdem, v2x_regime_amb, diff_polyarchy, backslided)
+  select(country_name, country_text_id, year, v2x_polyarchy, v2x_regime_amb, diff_polyarchy, backslided)
 
 # 2022/2023 values (is NA for ones in backsliding. Let's make that True.)
 workingvdem$backslided <- ifelse(is.na(workingvdem$backslided),
@@ -66,7 +66,7 @@ z <- merged$diff_polyarchy |> scale()
 merged_lasso <- dplyr::select(merged, matches("^Q([0-9]+)"))
 
 # Lasso
-lasso_mod <- glmnet(data.matrix(merged_lasso), y, alpha = 1, lambda = grid) |> plot()
+glmnet(data.matrix(merged_lasso), y, alpha = 1, lambda = grid) |> plot()
 
 set.seed(1)
 cv_out <- cv.glmnet(data.matrix(merged_lasso), y, alpha = 1) 
@@ -175,7 +175,7 @@ test_full <- testing(full_split)
 
 rec_full <- recipe(v2x_polyarchy ~ ., data = train_full) |>
   step_select(all_numeric()) |>
-  update_role(year, diff_polyarchy, v2x_regime_amb, new_role = "ID") #Incl. libdem!
+  update_role(year, diff_polyarchy, v2x_regime_amb, new_role = "ID")
 wf_full <- workflow() |>
   add_model(model_xgboost) |>
   add_recipe(rec_full)
@@ -225,18 +225,21 @@ wf <- workflow() |>
 model_res <- wf |>
   tune_grid(resamples = cv_folds,
             grid = xg_grid,
-            control = control_grid(save_pred = TRUE))
+            control = control_grid(save_pred = TRUE),
+            metric_set(roc_auc))
 collect_metrics(model_res)
 
-best_tree <- model_res |> select_best(metric = "accuracy")
+best_tree <- model_res |> select_best(metric = "roc_auc")
 final_wf <- wf |> finalize_workflow(best_tree)
 final_fit <- final_wf |> last_fit(data_split)
 final_fit |> collect_metrics()
 
+final_fit |>
+  collect_predictions() |>
+  roc_curve(backslided, .pred_TRUE) |>
+  autoplot()
 
-
-
-
-
-
+simple_glm_roc <- 
+  simple_glm_probs %>% 
+  roc_curve(Class, .pred_One)
 

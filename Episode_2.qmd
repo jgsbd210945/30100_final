@@ -6,6 +6,7 @@ subtitle: "Identifying Correlations between World Values Survey Responses and Le
 author:
   - name: Jason Gordon
     email: jagordon@uchicago.edu"
+    url: https://github.com/jgsbd210945/30100_final
     affiliation: 
       - name: The University of Chicago
         city: Chicago
@@ -26,9 +27,9 @@ csl: chicago-fullnote-bibliography.csl
 
 ## Intoduction
 
-Democratic backsliding has increasingly taken hold of the world, with the Varieties of Democracy (V-DEM) 2024 Democracy Report identifying 28 cases of backsliding in democracies, 13 of which having reverted to autocracies since the episode began [@nordDemocracyReport20242024]. As backsliding occurs within democracies with elected leaders, there is seemingly popular support *against* democracy in these countries — at least given the results of these elections.
+Democratic backsliding has increasingly taken hold of the world, with the Varieties of Democracy (V-DEM) 2024 Democracy Report identifying 28 cases of backsliding in democracies, 13 of which having reverted to autocracies since the episode began [@nordDemocracyReport20242024]. As backsliding occurs within democracies with elected leaders, there is seemingly popular support *against* democracy in these countries — at least given the results of these elections. So, what shifts in an electorate's values are the most important to backsliding, and can we use machine learning techniques to predict the onset of backsliding?
 
-In this report, I plan to inspect if the wave of autocratization in democracies is the result of a shift in values against democracy, and which values are the most important for the shift to autocracy. As the number of cases of backsliding increases, it becomes increasingly important to understand why people would vote for actors that seek to challenge the core foundation of democratic institutions; with this knowledge, we may be able to further understand when cases of backsliding can happen.
+In this paper, I plan to inspect if the wave of autocratization in democracies is the result of a shift in values against democracy, and which values are the most important for the shift to autocracy. As the number of cases of backsliding increases, it becomes increasingly important to understand why people would vote for actors that seek to challenge the core foundation of democratic institutions; with this knowledge, we may be able to further understand when cases of backsliding can happen.
 
 First, I will be summarizing existing literature on democratic backsliding, identifying the tension in what causes backsliding. Then, I will conduct some exploratory data analysis and model fitting of my dataset, using Lasso to identify notable variables. Finally, I will discuss if these variables have importance in conducting future research.
 
@@ -46,41 +47,53 @@ I intend to put these differing claims to the test. While I expect that grievanc
 
 ## Data
 
-I plan to combine the data from V-DEM's 2024 Democracy Report and the World Values Survey to identify correlations WVS's answers and overall level of democracy. I'm looking to use waves 6 and 7 of the WVS report, so will only need V-DEM's data beyond 2010.
-
-```{r setup}
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(warnings = FALSE)
 library(tidyverse)
 library(vdemdata)
 library(glmnet)
+library(tidymodels)
+library(xgboost)
 
-load('WVS_Cross-National_Wave_7_rData_v6_0.rdata')
+load('Data/WVS_Cross-National_Wave_7_rData_v6_0.rdata')
 wvs7 <- `WVS_Cross-National_Wave_7_v6_0` |> as.tibble()
-load('WV6_Data_R_v20201117.rdata')
-wvs6 <- `WV6_Data_R_v20201117` |> as.tibble()
-
-workingvdem <- tibble(vdem) |>
-  select(c(country_name, country_text_id, year, v2x_polyarchy, v2x_regime_amb)) |>
-  filter(year >= 2005)
 ```
+I plan to utilize the World Values Survey's (WVS) seventh wave of data to account for the values I plan to inspect, pairing the averages of responses with the correlating electoral democracy scores found in the Varieties of Democracy's (V-DEM) data set.
 
-First, I will clean the V-DEM dataset, adding a difference in the `v2x_polyarchy` variable - that is, the measure of electoral democracy - and create a boolean variable for if the state has experienced a backsliding episode, defined as having its electoral democracy score decrease at least three years in a row. I will also ensure any NAs introduced are properly handled at this stage; since my focus is after 2010, I am removing the years before then, but will filter for year after the variables are introduced to limit NAs. The remaining are due to South Sudan not existing before 2011 and NAs introduced by attempting to get data after 2023, when the V-DEM dataset ends.
+While both are relatively large sources of data, combining the two results in just 62 observations; since WVS uses different questions between years, I cannot discuss it over time, leading to, unfortunately, a rather limited amount of data to analyze. Despite this, there are few other limitations between the two data sets. Both plot their results on a scale, meaning there are no significant outlying values, and they are both trusted sources of data used across the literature.
 
-```{r cleaningvdem}
-workingvdem <- workingvdem |>
+While I will focus on all questions in the WVS data, I plan on focusing on the electoral democracy and regime scores in the V-DEM data set. The electoral democracy index seeks to identify the structural components in a democracy; that is, are elections free and fair, and are the rights required for democratic rule generally followed? Alongside this, I will be collecting the overall regime type in the data, which puts all states on a ten-point scale from most to least democratic.
+
+I will also create two additional variables, which I also aim to test to understand if a state is undergoing democratic backsliding: the difference in electoral democracy score, and a Boolean value for if a state is in a period of backsliding, defined below:
+
+```{r chunk1}
+workingvdem <- tibble(vdem) |>
+  filter(year > 1975) |> # So I can do the lags correctly. This will be standardized later.
   group_by(country_text_id) |>
   arrange(year) |> # Should already be the case, but just in case it's not
   mutate(diff_polyarchy = v2x_polyarchy - lag(v2x_polyarchy)) |>
+  # Backsliding boolean variable. I'm quantitatively defining it as having decreased in electoral democracy score by more than .005 and having decreased by at least 0.03 in the last two years.
+  # I also filtered so that the regime has to be at least some semblance of an electoral autocracy (at least) so that hard autocracies getting more autocratic aren't included.
+  mutate(backslided = (diff_polyarchy < -0.005) &
+           (v2x_regime_amb > 2) &
+           (lag(v2x_polyarchy, 2) - v2x_polyarchy > 0.03)) |>
+  # Filling it out
+  mutate(backslided = (diff_polyarchy < -0.001) &
+           (backslided |
+              ((lag(backslided) & lag(backslided, 2))|
+                 lead(backslided) & lag(backslided) |
+                 lead(backslided, 2) & lead(backslided)))) |>
   ungroup() |>
-  arrange(country_text_id)
+  filter(year > 2009) |>
+  arrange(country_text_id) |>
+  select(country_name, country_text_id, year, v2x_polyarchy, v2x_libdem, v2x_regime_amb, diff_polyarchy, backslided)
+```
 
-workingvdem <- workingvdem |> group_by(country_text_id) |>
-  # Did electoral democracy decrease in a non-entrenched autocracy?
-  mutate(backslided = (diff_polyarchy < -0.01) & (v2x_regime_amb) > 3) |>
-  # Did it do it at least three years in a row?
-  mutate(backslided = (backslided & lag(backslided) & lag(lag(backslided))) |
-           lead(backslided) & backslided & lag(backslided) |
-           lead(lead(backslided)) & lead(backslided) & backslided) |>
-  filter(year > 2009)
+By defining a period of backsliding in an overall shift from democracy that does *not* have to be a sharp decline every year, I can create clear periods of backsliding, easily identifying cases.
+
+In addition to creating these variables, I will be cleaning both data sets and attempting to standardize missing values if I cannot remove them, which will hopefully make my data as accurate as possible. This should also allow me to merge the V-DEM and WVS data without hassle.
+
+```{r cleaningvdem, include = FALSE}
 # 2022/2023 values (is NA for ones in backsliding. Let's make that True.)
 workingvdem$backslided <- ifelse(is.na(workingvdem$backslided),
                                  TRUE,
@@ -93,11 +106,7 @@ isnum_lowna <- apply(workingvdem, 2, function(col){
 na_rows <- apply(workingvdem, 1, function(row){sum(is.na(row))})
 missing_rows <- na_rows != 0
 workingvdem <- workingvdem[!missing_rows,]
-```
 
-I will do a similar level of cleaning for the two WVS surveys I have, but will work on them separately due to different questions asked in each wave. I will summarize answers by country to get a single value to compare to as well. To take care of negative values, which are NA in this case, I have attempted to remove them through taking the averages of a country's data and then set any remaining NA values to -1. Otherwise, the data tends to get messy. This may complicate the data, but ideally in a somewhat uniform fashion.
-
-```{r wvs7}
 wvs_test <- dplyr::select(wvs7, A_YEAR, B_COUNTRY_ALPHA, matches("^Q([0-9]+)")) |>
   rename(year = A_YEAR, country_text_id = B_COUNTRY_ALPHA)
 
@@ -109,139 +118,117 @@ wvs_test[isnum] <- lapply(wvs_test[isnum], \(x) ifelse(x < 0, NA, x))
 wvs_test <- wvs_test |>
   group_by(year, country_text_id) |>
   summarize(across(everything(), \(x) mean(x, na.rm = TRUE)))
-
 isnum <- sapply(wvs_test, is.numeric) # Cols where we're working with #'s
-# For those cols, set all remaining NAs to -1.
+# For those cols, remove all vals less than 0.
 wvs_test[isnum] <- lapply(wvs_test[isnum], \(x) ifelse(is.na(x), -1, x))
 
 merged <- merge(workingvdem, wvs_test, by = c("year", "country_text_id")) |>
   as_tibble()
+merged$backslided <- factor(merged$backslided)
 ```
+### Exploratory Analysis
 
-To determine which features are the most important, I plan on utilizing a Lasso model. I initially used `diff_polyarchy` for my metric to determine key features on and scaled it so its variance was significant, which allowed me to use lasso, but it does not allow me to get the top features since the variance is still rather low.
+To determine which features are the most important to a shift in electoral democracy score, I plan on using a Lasso model, testing the electoral democracy score to get the most important variables. While using the difference in this score may seem more intuitive, its low variance results in the model being unable to get the top features.
 
-Instead, I used the electoral democracy score (`v2x_polyarchy`), which functioned a lot better, allowing me to find the top features and plotting things properly.
-
-```{r lasso}
+```{r lassosetup, echo = FALSE}
 grid <- 10^seq(10, -2, length = 100)
-y7 <- merged$v2x_polyarchy
-z7 <- merged$diff_polyarchy |> scale()
+y <- merged$v2x_polyarchy
+z <- merged$diff_polyarchy |> scale()
 merged_lasso <- dplyr::select(merged, matches("^Q([0-9]+)"))
 
-lasso_mod <- glmnet(data.matrix(merged_lasso), y7, alpha = 1, lambda = grid)
-plot(lasso_mod)
+# Lasso
+glmnet(data.matrix(merged_lasso), y, alpha = 1, lambda = grid) |> plot()
 
 set.seed(1)
-cv7_out <- cv.glmnet(data.matrix(merged_lasso), y7, alpha = 1)
-plot(cv7_out)
-
-top_features7 <- coef(cv7_out, s = "lambda.1se")
-top_features7 <- top_features7[-1,]
-top_features7 <- top_features7[top_features7 != 0]
-sort(abs(top_features7), decreasing = TRUE) |> head(15)
-
-lasso_modz <- glmnet(data.matrix(merged_lasso), z7, alpha = 1, lambda = grid)
-plot(lasso_modz)
-# However, can't find most important features because everything's so small!
+cv_out <- cv.glmnet(data.matrix(merged_lasso), y, alpha = 1) 
+plot(cv_out)
 ```
 
-We can do the same process for the 6th wave, as seen below.
+Given our cross-validation graph indicates our most important features will be somewhere between 10 and 15, we can then discuss which variables are the most important, as seen below.
 
-```{r wvs6}
-wvs6_test <- dplyr::select(wvs6, B_COUNTRY_ALPHA, matches("^V([0-9]+)")) |>
-  dplyr::select(-c(V1, V2, V2A, V3)) |>
-  rename(country_text_id = B_COUNTRY_ALPHA)
+```{r results}
+top_features <- coef(cv_out, s = "lambda.1se")
+top_features <- top_features[-1,]
+top_features <- top_features[top_features != 0]
+sort(abs(top_features), decreasing = TRUE) |> head(15)
+```
 
-wvs6_test$year = 2013 # no specific year, assuming 2013.
+Thus, the most impactful questions on the democracy score are as follows, alongside the graph of how important they are (with further away from 0 indicating increased important as more factors are added):
+* Q211 *(Openness to attending a political demonstration)*
+* Q239 *(Opinion on religious law governing a country)*
+* Q38 *(Is it a child's duty to take care of a sick parent?)*
+* Q212 *(Openness to joining unofficial strikes)*
+* Q271 *(If the respondent is living with their parents)*
+* Q225 *(Frequency of opposition candidates prevented from running)*
+* Q73 *(Confidence in country's parliament)*
+* Q3 *(Importance of leisure time)*
+* Q292I *(Belief politicians are incompetent or ineffective)*
+* Q182 *(Is homosexuality justifiable?)*
+* Q262 *(Age)*
+```{r lassoresults, echo = FALSE}
+merged_select <- merged_lasso |> dplyr::select(names(top_features))
+lasso_ms <- glmnet(data.matrix(merged_select), y, alpha = 1, lambda = grid) # y is still well-being
+par(mar = c(5, 4, 4, 8), xpd = TRUE) # Need space for the legend
+plot(lasso_ms)
 
-isnum <- sapply(wvs6_test, is.numeric) # Cols where we're working with #'s
-# For those cols, remove all vals less than 0.
-wvs6_test[isnum] <- lapply(wvs6_test[isnum], \(x) ifelse(x < 0, NA, x))
+# Making the legend
+lasso_coefs <- coef(lasso_ms)
+var_names <- rownames(lasso_coefs)[-1]
+colors <- seq_len(length(var_names))
+legend("right", legend = var_names, col = colors, lty = 1, cex = 0.8, inset = c(-0.25, 0))
+```
 
-# By country
-wvs6_test <- wvs6_test |>
-  group_by(year, country_text_id) |>
-  summarize(across(everything(), \(x) mean(x, na.rm = TRUE)))
-isnum <- sapply(wvs6_test, is.numeric) # Cols where we're working with #'s
-# For those cols, remove all vals less than 0.
-wvs6_test[isnum] <- lapply(wvs6_test[isnum], \(x) ifelse(is.na(x), -1, x))
+Many of these reflect core foundations of democracy, but there are some that seem more cultural. We can see notable trends in political demonstrations highly correlating with overall level of electoral democracy; Q211 and Q212 are among the first variables given coefficients, and Q211 has the largest overall effect. This makes sense, as generally, an increased level to take public action for political reasons would increase the level of accountability leaders have to their people. 
 
-merged6 <- merge(workingvdem, wvs6_test, by = c("year", "country_text_id")) |>
-  as_tibble()
+Additionally, Wave 7 denotes variables like confidence in parliament, belief politicians are incompetent or ineffective, and frequency of opposition candidates being prevented from running. These all directly tie into whether electoral democracy is healthy, as if opposition candidates are not allowed to run, overall level of democracy decreases, and the last of these variables is one of the metrics V-DEM also measures to indicate level of electoral democracy.
 
-y6 <- merged6$v2x_polyarchy
-z6 <- merged6$diff_polyarchy |> scale()
-merged6_lasso <- dplyr::select(merged6, matches("^V([0-9]+)")) |>
-  dplyr::select(-matches("^v2x")) # Have to EXPLICITLY remove these.
+Finally, the belief that the government and its actors may be ineffective make sense to discuss both electoral democracy and backsliding. As a population's trust of its government falls, it often polarizes and seeks anti-system candidates, resulting in an increased likelihood of a potential autocrat's election.
 
-lasso_modz <- glmnet(data.matrix(merged6_lasso), z6, alpha = 1, lambda = grid)
-plot(lasso_modz)
-# However, can't find most important features because everything's so small!
+## Modeling
 
-lasso_mod6 <- glmnet(data.matrix(merged6_lasso), y6, alpha = 1, lambda = grid)
-plot(lasso_mod6)
+To test if I can predict electoral democracy levels and backsliding, I utilized an XGBoosted tree, as it allows me to use the most important variables found via Lasso to predict its results. Thus, I can focus on just these elements, creating more accurate predictions than other models.
+```{r preprocessing, include = FALSE}
+model_data <- dplyr::select(merged, country_name, v2x_polyarchy, diff_polyarchy, backslided, matches(var_names))
 
 set.seed(1)
-cv6_out <- cv.glmnet(data.matrix(merged6_lasso), y6, alpha = 1)
-plot(cv6_out)
+data_split <- initial_split(model_data, prop = 0.5)
+train_data <- training(data_split)
+test_data  <- testing(data_split)
 
-top_features6 <- coef(cv6_out, s = "lambda.1se")
-top_features6 <- top_features6[-1,]
-top_features6 <- top_features6[top_features6 != 0]
-sort(abs(top_features6), decreasing = TRUE) |> head(15)
+rec <- recipe(v2x_polyarchy ~ ., data = train_data) |>
+  step_select(all_numeric()) |>
+  update_role(diff_polyarchy, new_role = "ID")
+
+## Cross-validation object
+cv_folds <- vfold_cv(train_data, v = 5, repeats = 1)
+
+# xgboost
+model_xgboost <- boost_tree(trees = 100, mtry=5, learn_rate = tune()) |> 
+  set_mode("regression") |> 
+  set_engine("xgboost")
+
+xg_grid <- grid_regular(learn_rate(), levels = 5)
+
+wf <- workflow() |>
+  add_model(model_xgboost) |>
+  add_recipe(rec)
+
+model_res <- wf |>
+  tune_grid(resamples = cv_folds,
+            grid = xg_grid,
+            control = control_grid(save_pred = TRUE))
 ```
 
-## Discussion
 
-As these values give differing results, I'll be analyzing them separately before discussing them in tandem.
 
-### Wave 6
 
-The top correlated variables with electoral democracy level after the cross-validation on WVS 6th wave are as follows: V115 *(confidence in government)*, V51 *(Do men make better political leaders?)*, V52 *(Is a university education more important for men over women?)*, V203 *(Is homosexuality justifiable?)*, V6 *(Importance of leisure time)*, V53 *(Do men make better business executives?)*, V208 *(Is it justifiable for a man to beat his wife?)*, and V215_11 *(Seeing oneself as part of CIS)*. You can also see the graph with them labeled below.
 
-```{r graph6}
-merged6_select <- merged6_lasso |> dplyr::select(names(top_features6))
-lasso_m6s <- glmnet(data.matrix(merged6_select), y6, alpha = 1, lambda = grid) # y is still well-being
-par(mar = c(5, 4, 4, 8), xpd = TRUE) # Need space for the legend
-plot(lasso_m6s)
 
-# Making the legend
-lasso_coefs6 <- coef(lasso_m6s)
-var_names6 <- rownames(lasso_coefs6)[-1]
-colors <- seq_len(length(var_names6))
-legend("right", legend = var_names6, col = colors, lty = 1, cex = 0.8, inset = c(-0.25, 0))
-```
 
-Some of these points make sense to discuss both electoral democracy and backsliding. Confidence in government quickly increasing in coefficient once it becomes non-zero reflects overall worries in governments resulting in increased autocracies. As states' populations trust their government less, they often turn to the extremes.
 
-Interestingly, the results of Wave 6's correlations are remarkably gendered. V51, 52, 53, and 208 are all among the top variables correlated, potentially revealing trends between strict gender norms and overall level of autocracy. Whether homosexuality is justifiable would also contribute to this mindset.
 
-The final two variables - importance of leisure time and seeing oneself as part of the Commonwealth of Independent States (CIS) may be additional noise, with the latter in particular potentially being due to the number of autocracies part of the post-Soviet sphere in 2013.
 
-Wave 6 identifies some important correlations in confidence in government and potential correlations between gendered ideology and autocracy, in addition to some noise resulting from where autocracies are. These findings seem to initially confirm an idea that confidence in governmental institutions is key to democracy, aligning with some aspects of the literature that find the *lack* of democracy is due to a lack of trust in institutions. This wave also flags potential correlations with gender equity as well, as half of the variables it found as important had to do with if imbalances in gender are justified.
 
-### Wave 7
-
-For the 7th wave, the most important questions are: Q211 *(Openness to attending a political demonstration)*, Q239 *(Opinion on religious law governing a country)*, Q38 *(Is it a child's duty to take care of a sick parent?)*, Q212 *(Openness to joining unofficial strikes), Q271 (Living with parents)*, Q225 *(Frequency of opposition candidates prevented from running)*, Q73 *(Confidence in country's parliament)*, Q3 *(Importance of leisure time)*, Q292I *(Belief politicians are incompetent or ineffective)*, Q182 *(Is homosexuality justifiable?)*, and Q262 *(Age)*. Many of these reflect core foundations to democracy, but present novel questions to ask.
-
-```{r graph7}
-merged7_select <- merged_lasso |> dplyr::select(names(top_features7))
-lasso_m7s <- glmnet(data.matrix(merged7_select), y7, alpha = 1, lambda = grid) # y is still well-being
-par(mar = c(5, 4, 4, 8), xpd = TRUE) # Need space for the legend
-plot(lasso_m7s)
-
-# Making the legend
-lasso_coefs7 <- coef(lasso_m7s)
-var_names7 <- rownames(lasso_coefs7)[-1]
-colors <- seq_len(length(var_names7))
-legend("right", legend = var_names7, col = colors, lty = 1, cex = 0.8, inset = c(-0.25, 0))
-```
-
-From Wave 7, we can see notable trends in political demonstrations highly correlating with overall level of electoral democracy; Q211 and Q212 are among the first variables given coefficients, and Q211 has the largest overall effect. This makes sense, as generally, an increased level to take public action for political reasons would increase the level of accountability leaders have to their people. 
-
-Additionally, Wave 7 denotes variables like confidence in parliament, belief politicians are incompetent or ineffective, and frequency of opposition candidates being prevented from running. These all directly tie into whether electoral democracy is healthy, as if opposition candidates are not allowed to run, overall level of democracy decreases. Beliefs that the government and its actors are ineffective also tie into what Wave 6 revealed, as this can decrease trust in democracy being able to function well.
-
-Interestingly, importance in leisure time and belief that homosexuality is justifiable were both correlated with electoral democracy level in Waves 6 and 7, potentially denoting some common social issues democracies promote. However, they are not as directly tied to the level of democracy as other variables are.
 
 ## Conclusion
 
