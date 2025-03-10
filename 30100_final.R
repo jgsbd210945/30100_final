@@ -3,6 +3,8 @@ library(vdemdata)
 library(glmnet)
 library(tidymodels)
 library(xgboost)
+library(vip)
+library(randomForest)
 
 load('Data/WVS_Cross-National_Wave_7_rData_v6_0.rdata')
 wvs7 <- `WVS_Cross-National_Wave_7_v6_0` |> as.tibble()
