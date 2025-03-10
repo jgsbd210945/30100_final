@@ -107,15 +107,37 @@ rec <- recipe(v2x_polyarchy ~ ., data = train_data) |>
 ## Cross-validation object
 cv_folds <- vfold_cv(train_data, v = 5, repeats = 1)
 
-# xgboost
-model_xgboost <- boost_tree(trees = 100, mtry=5, learn_rate = tune()) |> 
+# xgboost vs randomForests
+model_rf100 = rand_forest(trees = 100) |> 
+  set_engine("ranger") |>
+  set_mode("regression")
+
+model_xgboost <- boost_tree(trees = 100, mtry=5) |> 
   set_mode("regression") |> 
   set_engine("xgboost")
 
+model_rf100 = rand_forest(trees = 100) |> 
+  set_engine("ranger") |>
+  set_mode("regression")
+
+wf_set <- workflow_set(
+  preproc = list(rec),
+  models = list(
+    xgboost = model_xgboost,
+    random_forest = model_rf100)
+)
+  
+wf_set_fitted <- workflow_map(wf_set, "fit_resamples", resamples = cv_folds)
+wf_set_fitted |> collect_metrics()
+
 xg_grid <- grid_regular(learn_rate(), levels = 5)
 
+model_xgboost_tune <- boost_tree(trees = 500, mtry=5, learn_rate = tune()) |> 
+  set_mode("regression") |> 
+  set_engine("xgboost")
+
 wf <- workflow() |>
-  add_model(model_xgboost) |>
+  add_model(model_xgboost_tune) |>
   add_recipe(rec)
 
 model_res <- wf |>
@@ -132,11 +154,15 @@ final_fit |> collect_metrics()
 final_fit |>
   collect_predictions() |>
   ggplot(aes(x = v2x_polyarchy, y = .pred)) +
-  geom_point() +
   geom_abline(color = 'red', linewidth = 1) +
+  geom_point() +
   labs(title = "Comparison of Prediction vs. Actual Electoral Democracy Score") +
   xlab("Actual Electoral Democracy Score") +
   ylab("Predicted Electoral Democracy Score")
+
+final_fit |>
+  extract_fit_parsnip() |>
+  vip(num_features = 20)
 
 ## Hmm...How about backsliding?
 rec_diff <- recipe(diff_polyarchy ~ ., data = train_data) |>
@@ -160,11 +186,16 @@ final_diff |> collect_metrics()
 final_diff |>
   collect_predictions() |>
   ggplot(aes(x = diff_polyarchy, y = .pred)) +
-  geom_point() +
   geom_abline(color = 'red', linewidth = 1) +
-  labs(title = "Comparison of Prediction vs. Actual Scaled Difference in Electoral Democracy Score") +
+  geom_point() +
+  labs(title = "Comparison of Prediction vs. Actual Difference in Electoral Democracy Score") +
   xlab("Actual Difference") +
   ylab("Predicted Difference")
+
+final_diff |>
+  extract_fit_parsnip() |>
+  vip(num_features = 20)
+
 
 # On All the data...
 
@@ -196,50 +227,41 @@ final_full |> collect_metrics()
 final_full |>
   collect_predictions() |>
   ggplot(aes(x = v2x_polyarchy, y = .pred)) +
-  geom_point() +
   geom_abline(color = 'red', linewidth = 1) +
+  geom_point() +
   labs(title = "Comparison of Prediction vs. Actual Electoral Democracy Score") +
-  xlab("Actual Difference") +
-  ylab("Predicted Difference")
+  xlab("Actual Electoral Democracy Score") +
+  ylab("Predicted Electoral Democracy Score")
 
 
 # Final thought...classification?
-rec <- recipe(backslided ~ ., data = train_data) |>
+rec_class <- recipe(backslided ~ ., data = train_data) |>
   step_select(backslided, all_numeric()) |>
   update_role(v2x_polyarchy, diff_polyarchy, new_role = "ID")
 
-## Cross-validation object
-cv_folds <- vfold_cv(train_data, v = 5, repeats = 1)
-
 # xgboost
-model_xgboost <- boost_tree(trees = 100, mtry=5, learn_rate = tune()) |> 
+model_xgboost_class <- boost_tree(trees = 500, mtry=5, learn_rate = tune()) |> 
   set_mode("classification") |> 
   set_engine("xgboost")
 
-xg_grid <- grid_regular(learn_rate(), levels = 5)
+wf_class <- workflow() |>
+  add_model(model_xgboost_class) |>
+  add_recipe(rec_class)
 
-wf <- workflow() |>
-  add_model(model_xgboost) |>
-  add_recipe(rec)
-
-model_res <- wf |>
+model_class <- wf_class |>
   tune_grid(resamples = cv_folds,
             grid = xg_grid,
             control = control_grid(save_pred = TRUE),
             metric_set(roc_auc))
-collect_metrics(model_res)
+collect_metrics(model_class)
 
-best_tree <- model_res |> select_best(metric = "roc_auc")
-final_wf <- wf |> finalize_workflow(best_tree)
-final_fit <- final_wf |> last_fit(data_split)
-final_fit |> collect_metrics()
+best_class <- model_class |> select_best(metric = "roc_auc")
+final_wf_class <- wf_class |> finalize_workflow(best_class)
+final_class <- final_wf_class |> last_fit(data_split)
+final_class |> collect_metrics()
 
-final_fit |>
+final_class |>
   collect_predictions() |>
   roc_curve(backslided, .pred_TRUE) |>
   autoplot()
-
-simple_glm_roc <- 
-  simple_glm_probs %>% 
-  roc_curve(Class, .pred_One)
 

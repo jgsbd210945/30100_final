@@ -186,7 +186,7 @@ Finally, the belief that the government and its actors may be ineffective make s
 
 ## Modeling
 
-To test if I can predict electoral democracy levels and backsliding, I utilized an XGBoosted tree, as it allows me to use the most important variables found via Lasso to predict its results. Thus, I can focus on just these elements, creating more accurate predictions than other models.
+To test if I can predict electoral democracy levels and backsliding, I decided to use decision trees, in an attempt to classify based on the different variables we got from Lasso. I tested two trees, finding that there is no major difference between RandomForest and XGBoost for trees, as seen below:
 ```{r preprocessing, include = FALSE}
 model_data <- dplyr::select(merged, country_name, v2x_polyarchy, diff_polyarchy, backslided, matches(var_names))
 
@@ -202,43 +202,204 @@ rec <- recipe(v2x_polyarchy ~ ., data = train_data) |>
 ## Cross-validation object
 cv_folds <- vfold_cv(train_data, v = 5, repeats = 1)
 
-# xgboost
-model_xgboost <- boost_tree(trees = 100, mtry=5, learn_rate = tune()) |> 
+# xgboost vs randomForests
+model_rf100 = rand_forest(trees = 100) |> 
+  set_engine("ranger") |>
+  set_mode("regression")
+
+model_xgboost <- boost_tree(trees = 100, mtry=5) |> 
   set_mode("regression") |> 
   set_engine("xgboost")
 
+model_rf100 = rand_forest(trees = 100) |> 
+  set_engine("ranger") |>
+  set_mode("regression")
+```
+```{r comparing}
+wf_set <- workflow_set(
+  preproc = list(rec),
+  models = list(
+    xgboost = model_xgboost,
+    random_forest = model_rf100)
+)
+  
+wf_set_fitted <- workflow_map(wf_set, "fit_resamples", resamples = cv_folds)
+wf_set_fitted |> collect_metrics()
+```
+
+However, I will use XGBoosted trees to focus on the variables, creating 500 trees in an attempt for increased accuracy. I also plan on tuning for the learning rate hyperparameter. Below are the results for my initial model. I will then get the best fit and use it to make our final predictions, seen compared to our predictions in the graph below. The red like is a perfect prediction, that is, the prediction is the same as the actual value.
+```{r initfit}
 xg_grid <- grid_regular(learn_rate(), levels = 5)
 
+model_xgboost_tune <- boost_tree(trees = 500, mtry=5, learn_rate = tune()) |> 
+  set_mode("regression") |> 
+  set_engine("xgboost")
+
 wf <- workflow() |>
-  add_model(model_xgboost) |>
+  add_model(model_xgboost_tune) |>
   add_recipe(rec)
 
 model_res <- wf |>
   tune_grid(resamples = cv_folds,
             grid = xg_grid,
             control = control_grid(save_pred = TRUE))
+collect_metrics(model_res)
+```
+```{r finalfit, echo = FALSE}
+best_tree <- model_res |> select_best(metric = "rmse")
+final_wf <- wf |> finalize_workflow(best_tree)
+final_fit <- final_wf |> last_fit(data_split)
+
+final_fit |>
+  collect_predictions() |>
+  ggplot(aes(x = v2x_polyarchy, y = .pred)) +
+  geom_abline(color = 'red', linewidth = 1) +
+  geom_point() +
+  labs(title = "Comparison of Prediction vs. Actual Electoral Democracy Score") +
+  xlab("Actual Electoral Democracy Score") +
+  ylab("Predicted Electoral Democracy Score")
 ```
 
+Seemingly, there is still a large amount of variation in our model, likely due to a low sample size. A larger sample could predict better - as the higher electoral democracy scores are a bit more precise - though there is no way to get this data, as the questions on the World Values Survey are inconsistent.
 
+I will also attempt to run the model on the full data, in case we missed any parameters. However, as seen below, there is no significant difference outside of random shifts due to splitting the entire data.
+```{r fulldata, echo = FALSE}
+# On All the data...
 
+set.seed(1)
+full_split <- initial_split(merged, prop = 0.5)
+train_full <- training(full_split)
+test_full <- testing(full_split)
 
+rec_full <- recipe(v2x_polyarchy ~ ., data = train_full) |>
+  step_select(all_numeric()) |>
+  update_role(year, diff_polyarchy, v2x_regime_amb, new_role = "ID")
+wf_full <- workflow() |>
+  add_model(model_xgboost) |>
+  add_recipe(rec_full)
 
+cv_full <- vfold_cv(train_full, v = 5, repeats = 1)
 
+model_full <- wf_full |>
+  tune_grid(resamples = cv_full,
+            grid = xg_grid,
+            control = control_grid(save_pred = TRUE))
 
+best_tree_full <- model_full |> select_best(metric = "rmse")
+final_wf_full <- wf_full |> finalize_workflow(best_tree_full)
+final_full <- final_wf_full |> last_fit(full_split)
 
+final_full |>
+  collect_predictions() |>
+  ggplot(aes(x = v2x_polyarchy, y = .pred)) +
+  geom_abline(color = 'red', linewidth = 1) +
+  geom_point() +
+  labs(title = "Comparison of Prediction vs. Actual Electoral Democracy Score") +
+  xlab("Actual Electoral Democracy Score") +
+  ylab("Predicted Electoral Democracy Score")
+```
 
+I also will be testing this model on two more variables: the difference in electoral democracy score, which indicates backsliding, and the Boolean variable indicating if a state is in a backsliding episode. Below is the prediction for difference in electoral democracy score.
+```{r diffpolyarchy, echo = FALSE}
+## Hmm...How about backsliding?
+rec_diff <- recipe(diff_polyarchy ~ ., data = train_data) |>
+  step_select(all_numeric()) |>
+  update_role(v2x_polyarchy, new_role = "ID")
+wf_diff <- workflow() |>
+  add_model(model_xgboost) |>
+  add_recipe(rec_diff)
 
+model_diff <- wf_diff |>
+  tune_grid(resamples = cv_folds,
+            grid = xg_grid,
+            control = control_grid(save_pred = TRUE))
 
+best_tree_diff <- model_diff |> select_best(metric = "rmse")
+final_wf_diff <- wf_diff |> finalize_workflow(best_tree_diff)
+final_diff <- final_wf_diff |> last_fit(data_split)
+
+final_diff |>
+  collect_predictions() |>
+  ggplot(aes(x = diff_polyarchy, y = .pred)) +
+  geom_abline(color = 'red', linewidth = 1) +
+  geom_point() +
+  labs(title = "Comparison of Prediction vs. Actual Difference in Electoral Democracy Score") +
+  xlab("Actual Difference") +
+  ylab("Predicted Difference")
+```
+
+Seemingly, the model did decently for differences in electoral democracy score, but that may be because the actual differences are close to zero, making it easy for the model to predict. Additionally, we can see if the model predicts if a state is in an episode of backsliding, with the ROC Curve below
+```{r backslided, echo = FALSE}
+# Final thought...classification?
+rec_class <- recipe(backslided ~ ., data = train_data) |>
+  step_select(backslided, all_numeric()) |>
+  update_role(v2x_polyarchy, diff_polyarchy, new_role = "ID")
+
+# xgboost
+model_xgboost_class <- boost_tree(trees = 500, mtry=5, learn_rate = tune()) |> 
+  set_mode("classification") |> 
+  set_engine("xgboost")
+
+wf_class <- workflow() |>
+  add_model(model_xgboost_class) |>
+  add_recipe(rec_class)
+
+model_class <- wf_class |>
+  tune_grid(resamples = cv_folds,
+            grid = xg_grid,
+            control = control_grid(save_pred = TRUE),
+            metric_set(roc_auc))
+
+best_class <- model_class |> select_best(metric = "roc_auc")
+final_wf_class <- wf_class |> finalize_workflow(best_class)
+final_class <- final_wf_class |> last_fit(data_split)
+
+final_class |>
+  collect_predictions() |>
+  roc_curve(backslided, .pred_TRUE) |>
+  autoplot()
+```
+```{r metrics}
+final_class |> collect_metrics()
+```
+
+Arguably, this data is little better than random selection, with large steps indicating a small sample size and not much else. With a 64.5% accuracy, it may be marginally better than pure random selection, but likely not by a significant amount.
+
+## Discussion
+
+While the global shift to autocracy is bolstered by an overall frustration in democratic institutions, it is by no means the only factor. This research confirms the theoretical claim that backsliding is correlated with an increase in frustrations with democratic institutions, but offers other potential variables like democratic activism and is not a useful predictive model.
+
+Below are the various VIP plots for each model. Here, we can see the various questions among each graph which may be the most important.
+```{r vip}
+final_fit |>
+  extract_fit_parsnip() |>
+  vip(num_features = 20)
+final_full |>
+  extract_fit_parsnip() |>
+  vip(num_features = 20)
+final_diff |>
+  extract_fit_parsnip() |>
+  vip(num_features = 20)
+final_class |>
+  extract_fit_parsnip() |>
+  vip(num_features = 20)
+```
+
+The most important features for each model (above 0.1 importance) are:
+* Electoral Democracy Score: Q212 (Political Action: Joining Unofficial Strikes), Q211 (Political Action: attending lawful/peaceful demonstrations), Q239 (Opinion on religious law), Q262 (Age)
+* Electoral Democracy Score (with all parameters): Q291UN3 (The UN usually acts in its own interests), Q209 (Political Action: signing a petition), Q219 (Political Action Online: encouraging others to take action)
+* Difference in ED Score: Q33_3 (Jobs Scarce: Men should have more right to a job than woken), Q73 (Confidence in Parliament), Q3 (Important in Life: leisure time), Q31 (Men make better business executives than women), Q35_3 (Problem if men have more income than women)
+* Whether a state is in a backsliding episode: Q35_3 (Problem if men have more income than women), Q3 (Important in Life: leisure time), Q39 (People who don't work turn lazy), Q262 (Age)
+
+My initial hypothesis of frustration in institutions causing backsliding seems to somewhat be important, as confidence in a state's parliament is important in the model predicting difference in electoral democracy score, and is flagged in the Lasso prediction, but otherwise, it is refuted. Instead, gender issues frequent those that are important in differences in electoral democracy score and backsliding episodes. However, gendered questions making backsliding more or less likely does make make sense, as increasing gender gaps drove Donald Trump - someone who, under his first term, ushered in a period of backsliding - to victory in November 2024. [@goldmacherDonaldTrumpReturns2024; @levitskyHowDemocracies2018a]
+
+However, these results present an additional correlation: that of democratic activism. In both electoral democracy models, political activism proved somewhat important multiple times. This correlation somewhat tracks with the fact that free speech has more restrictions in more autocratic regimes, but the questions ask if someone is *willing* to join in the political action, so those states with higher proportions of people willing to resist likely are more democratic as a result.
 
 ## Conclusion
 
-While the global shift to autocracy is bolstered by an overall frustration in democratic institutions, it is by no means the only factor. This research confirms the theoretical claim that backsliding is correlated with an increase in frustrations with democratic institutions, but also offers other potential variables like democratic activism and gender equity, which have potential for further theoretical analysis.
+Thus, the level of democracy in a state - at least to some extent - is affected by the values of its population. If people are dissatisfied with the government and will rarely take political action, an autocratic regime is more likely, and an increased paternal bias inside a state correlates with backsliding episodes. Using these correlations, we may be able to predict backsliding for future states, furthering our understanding of this shift from democracy in an ever-changing world.
 
-My initial hypothesis of frustration in institutions causing backsliding seems to hold, as trust in institutions is strongly correlated with government type. In particular, V115 (that of confidence in government during Wave 6 of the World Values Survey) was the variable most strongly correlated with government type for that set of data.
-
-However, Wave 7's results posit an additional variable: that of democratic activism. Two of the most correlated variables are specifically about being open to political action. While further research is required to confirm its causality, this correlation implicates backsliding not only occurs due to frustration with governments but also as a result of a low will to protest for political purposes.
-
-Thus, the level of democracy in a state - at least to some extent - is affected by the values of its population. If people are dissatisfied with the government and will rarely take political action, an autocratic regime is more likely. Using these correlations, we may be able to predict backsliding for future states, furthering our understanding of this shift from democracy in an ever-changing world.
+With more resources and time, I may have been able to improve the model with an increase in data by asking questions like those on the World Values Survey and gathering an eighth wave of data, effectively doubling my data set. My challenge - and the one that impacted my results the most - was a lack of data, since the WVS is taken once every few years in a single country, and has different questions in each wave. Due to this, I could only effectively use one wave of data for modeling, creating difficulties in my model's overall viability. If I could gather a new set of responses to these questions, I would be able to use that data to increase my model's accuracy, potentially giving different results and predicting backsliding episodes more effectively.
 
 ## References
 
