@@ -10,12 +10,17 @@ load('Data/WVS_Cross-National_Wave_7_rData_v6_0.rdata')
 wvs7 <- `WVS_Cross-National_Wave_7_v6_0` |> as.tibble()
 
 workingvdem <- tibble(vdem) |>
-  filter(year > 1975) |> # So I can do the lags correctly. This will be standardized later.
+  filter(year > 1975) |>
   group_by(country_text_id) |>
-  arrange(year) |> # Should already be the case, but just in case it's not
+  arrange(year) |>
   mutate(diff_polyarchy = v2x_polyarchy - lag(v2x_polyarchy)) |>
-  # Backsliding boolean variable. I'm quantitatively defining it as having decreased in electoral democracy score by more than .005 and having decreased by at least 0.03 in the last two years.
-  # I also filtered so that the regime has to be at least some semblance of an electoral autocracy (at least) so that hard autocracies getting more autocratic aren't included.
+  # Backsliding boolean variable.
+  # I'm quantitatively defining it as having decreased in electoral
+  # democracy score by more than .005 and having decreased by at
+  # least 0.03 in the last two years.
+  # I also filtered so that the regime has to be at least some semblance
+  # of an electoral autocracy (at least) so that hard autocracies getting
+  # more autocratic aren't included.
   mutate(backslided = (diff_polyarchy < -0.005) &
            (v2x_regime_amb > 2) &
            (lag(v2x_polyarchy, 2) - v2x_polyarchy > 0.03)) |>
@@ -28,7 +33,14 @@ workingvdem <- tibble(vdem) |>
   ungroup() |>
   filter(year > 2009) |>
   arrange(country_text_id) |>
-  select(country_name, country_text_id, year, v2x_polyarchy, v2x_regime_amb, diff_polyarchy, backslided)
+  select(country_name,
+         country_text_id,
+         year,
+         v2x_polyarchy,
+         v2x_libdem, 
+         v2x_regime_amb, 
+         diff_polyarchy, 
+         backslided)
 
 # 2022/2023 values (is NA for ones in backsliding. Let's make that True.)
 workingvdem$backslided <- ifelse(is.na(workingvdem$backslided),
@@ -118,10 +130,6 @@ model_xgboost <- boost_tree(trees = 100, mtry=5) |>
   set_mode("regression") |> 
   set_engine("xgboost")
 
-model_rf100 = rand_forest(trees = 100) |> 
-  set_engine("ranger") |>
-  set_mode("regression")
-
 wf_set <- workflow_set(
   preproc = list(rec),
   models = list(
@@ -166,39 +174,6 @@ final_fit |>
   extract_fit_parsnip() |>
   vip(num_features = 20)
 
-## Hmm...How about backsliding?
-rec_diff <- recipe(diff_polyarchy ~ ., data = train_data) |>
-  step_select(all_numeric()) |>
-  update_role(v2x_polyarchy, new_role = "ID")
-wf_diff <- workflow() |>
-  add_model(model_xgboost) |>
-  add_recipe(rec_diff)
-
-model_diff <- wf_diff |>
-  tune_grid(resamples = cv_folds,
-            grid = xg_grid,
-            control = control_grid(save_pred = TRUE))
-collect_metrics(model_diff)
-
-best_tree_diff <- model_diff |> select_best(metric = "rmse")
-final_wf_diff <- wf_diff |> finalize_workflow(best_tree_diff)
-final_diff <- final_wf_diff |> last_fit(data_split)
-final_diff |> collect_metrics()
-
-final_diff |>
-  collect_predictions() |>
-  ggplot(aes(x = diff_polyarchy, y = .pred)) +
-  geom_abline(color = 'red', linewidth = 1) +
-  geom_point() +
-  labs(title = "Comparison of Prediction vs. Actual Difference in Electoral Democracy Score") +
-  xlab("Actual Difference") +
-  ylab("Predicted Difference")
-
-final_diff |>
-  extract_fit_parsnip() |>
-  vip(num_features = 20)
-
-
 # On All the data...
 
 set.seed(1)
@@ -235,6 +210,43 @@ final_full |>
   xlab("Actual Electoral Democracy Score") +
   ylab("Predicted Electoral Democracy Score")
 
+final_full |>
+  extract_fit_parsnip() |>
+  vip(num_features = 20)
+
+
+## Hmm...How about backsliding?
+rec_diff <- recipe(diff_polyarchy ~ ., data = train_data) |>
+  step_select(all_numeric()) |>
+  update_role(v2x_polyarchy, new_role = "ID")
+wf_diff <- workflow() |>
+  add_model(model_xgboost) |>
+  add_recipe(rec_diff)
+
+model_diff <- wf_diff |>
+  tune_grid(resamples = cv_folds,
+            grid = xg_grid,
+            control = control_grid(save_pred = TRUE))
+collect_metrics(model_diff)
+
+best_tree_diff <- model_diff |> select_best(metric = "rmse")
+final_wf_diff <- wf_diff |> finalize_workflow(best_tree_diff)
+final_diff <- final_wf_diff |> last_fit(data_split)
+final_diff |> collect_metrics()
+
+final_diff |>
+  collect_predictions() |>
+  ggplot(aes(x = diff_polyarchy, y = .pred)) +
+  geom_abline(color = 'red', linewidth = 1) +
+  geom_point() +
+  labs(title = "Comparison of Prediction vs. Actual Difference in Electoral Democracy Score") +
+  xlab("Actual Difference") +
+  ylab("Predicted Difference")
+
+final_diff |>
+  extract_fit_parsnip() |>
+  vip(num_features = 20)
+
 
 # Final thought...classification?
 rec_class <- recipe(backslided ~ ., data = train_data) |>
@@ -266,4 +278,6 @@ final_class |>
   collect_predictions() |>
   roc_curve(backslided, .pred_TRUE) |>
   autoplot()
-
+final_class |>
+  extract_fit_parsnip() |>
+  vip(num_features = 20)

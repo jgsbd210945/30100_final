@@ -217,7 +217,7 @@
 \urlstyle{same} % disable monospaced font for URLs
 \hypersetup{
   pdftitle={Shifts in Values, Shifts in Democracy},
-  pdfauthor={Jason Gordon},
+  pdfauthor={Jason Gordon - jagordon@uchicago.edu},
   colorlinks=true,
   linkcolor={blue},
   filecolor={Maroon},
@@ -235,12 +235,18 @@
 \makeatother
 \subtitle{Identifying Correlations between World Values Survey Responses
 and Level of Electoral Democracy}
-\author{Jason Gordon}
+\author{Jason Gordon - jagordon@uchicago.edu}
 \date{2025-03-13}
 
 \begin{document}
 \maketitle
 
+
+This project combines the World Values Survey data with V-DEM's
+electoral democracy score, seeking to identify correlations between
+people's values and their state's level of democracy - and if it will
+undergo democratic backsliding. You can find the project at:
+\url{https://github.com/jgsbd210945/30100_final}.
 
 \newpage
 
@@ -458,16 +464,33 @@ are the most important, as seen below.
 Thus, the most impactful questions on the democracy score are as
 follows, alongside the graph of how important they are (with further
 away from 0 indicating increased important as more factors are added):
-\textbf{Q211} \emph{(Openness to attending a political demonstration)}
-\textbf{Q239} \emph{(Opinion on religious law governing a country)}
-\textbf{Q38} \emph{(Is it a child's duty to take care of a sick
-parent?)} \textbf{Q212} \emph{(Openness to joining unofficial strikes)}
-\textbf{Q271} \emph{(If the respondent is living with their parents)}
-\textbf{Q225} \emph{(Frequency of opposition candidates prevented from
-running)} \textbf{Q73} \emph{(Confidence in country's parliament)}
-\textbf{Q3} \emph{(Importance of leisure time)} \textbf{Q292I}
-\emph{(Belief politicians are incompetent or ineffective)} \textbf{Q182}
-\emph{(Is homosexuality justifiable?)} \textbf{Q262} \emph{(Age)}
+
+\begin{itemize}
+\tightlist
+\item
+  Q211 \emph{(Openness to attending a political demonstration)}
+\item
+  Q239 \emph{(Opinion on religious law governing a country)}
+\item
+  Q38 \emph{(Is it a child's duty to take care of a sick parent?)}
+\item
+  Q212 \emph{(Openness to joining unofficial strikes)}
+\item
+  Q271 \emph{(If the respondent is living with their parents)}
+\item
+  Q225 \emph{(Frequency of opposition candidates prevented from
+  running)}
+\item
+  Q73 \emph{(Confidence in country's parliament)}
+\item
+  Q3 \emph{(Importance of leisure time)}
+\item
+  Q292I \emph{(Belief politicians are incompetent or ineffective)}
+\item
+  Q182 \emph{(Is homosexuality justifiable?)}
+\item
+  Q262 \emph{(Age)}
+\end{itemize}
 
 \includegraphics{Episode_2_files/figure-pdf/lassoresults-1.pdf}
 
@@ -550,28 +573,6 @@ the actual value.
   \FunctionTok{tune\_grid}\NormalTok{(}\AttributeTok{resamples =}\NormalTok{ cv\_folds,}
             \AttributeTok{grid =}\NormalTok{ xg\_grid,}
             \AttributeTok{control =} \FunctionTok{control\_grid}\NormalTok{(}\AttributeTok{save\_pred =} \ConstantTok{TRUE}\NormalTok{))}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-> A | warning: A correlation computation is required, but `estimate` is constant and has 0
-               standard deviation, resulting in a divide by 0 error. `NA` will be returned.
-\end{verbatim}
-
-\begin{verbatim}
-There were issues with some computations   A: x1
-\end{verbatim}
-
-\begin{verbatim}
-There were issues with some computations   A: x5
-There were issues with some computations   A: x5
-\end{verbatim}
-
-\begin{verbatim}
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
 \FunctionTok{collect\_metrics}\NormalTok{(model\_res)}
 \end{Highlighting}
 \end{Shaded}
@@ -619,18 +620,6 @@ making it easy for the model to predict. Additionally, we can see if the
 model predicts if a state is in an episode of backsliding, with the ROC
 Curve below
 
-\begin{verbatim}
-> A | warning: No control observations were detected in `truth` with control level 'TRUE'.
-\end{verbatim}
-
-\begin{verbatim}
-There were issues with some computations   A: x1
-There were issues with some computations   A: x1
-\end{verbatim}
-
-\begin{verbatim}
-\end{verbatim}
-
 \includegraphics{Episode_2_files/figure-pdf/backslided-1.pdf}
 
 \begin{Shaded}
@@ -674,19 +663,67 @@ various questions among each graph which may be the most important.
 \includegraphics{Episode_2_files/figure-pdf/vip-4.pdf}
 
 The most important features for each model (above 0.1 importance) are as
-follows: \textbf{Electoral Democracy Score:} Q212 (Political Action:
-Joining Unofficial Strikes), Q211 (Political Action: attending
-lawful/peaceful demonstrations), Q239 (Opinion on religious law), Q262
-(Age) \textbf{Electoral Democracy Score (with all parameters):} Q291UN3
-(The UN usually acts in its own interests), Q209 (Political Action:
-signing a petition), Q219 (Political Action Online: encouraging others
-to take action) \textbf{Difference in ED Score:} Q33\_3 (Jobs Scarce:
-Men should have more right to a job than woken), Q73 (Confidence in
-Parliament), Q3 (Important in Life: leisure time), Q31 (Men make better
-business executives than women), Q35\_3 (Problem if men have more income
-than women) \textbf{Whether a state is in a backsliding episode:} Q35\_3
-(Problem if men have more income than women), Q3 (Important in Life:
-leisure time), Q39 (People who don't work turn lazy), Q262 (Age)
+follows:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Electoral Democracy Score:}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Q212 (Political Action: Joining Unofficial Strikes)
+  \item
+    Q211 (Political Action: attending lawful/peaceful demonstrations)
+  \item
+    Q239 (Opinion on religious law)
+  \item
+    Q262 (Age)
+  \end{itemize}
+\item
+  \textbf{Electoral Democracy Score (with all parameters):}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Q291UN3 (The UN usually acts in its own interests)
+  \item
+    Q209 (Political Action: signing a petition)
+  \item
+    Q219 (Political Action Online: encouraging others to take action)
+  \end{itemize}
+\item
+  \textbf{Difference in ED Score:}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Q33\_3 (Jobs Scarce: Men should have more right to a job than woken)
+  \item
+    Q73 (Confidence in a state's parliament)
+  \item
+    Q3 (Important in Life: leisure time)
+  \item
+    Q31 (Men make better business executives than women)
+  \item
+    Q35\_3 (Problem if men have more income than women)
+  \end{itemize}
+\item
+  \textbf{Whether a state is in a backsliding episode:}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Q35\_3 (Problem if men have more income than women)
+  \item
+    Q3 (Important in Life: leisure time)
+  \item
+    Q39 (People who don't work turn lazy)
+  \item
+    Q262 (Age)
+  \end{itemize}
+\end{itemize}
 
 My initial hypothesis of frustration in institutions causing backsliding
 seems to somewhat be important, as confidence in a state's parliament is

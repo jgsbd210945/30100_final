@@ -1,23 +1,19 @@
 ---
+title: "Shifts in Values, Shifts in Democracy"
+subtitle: "Identifying Correlations between World Values Survey Responses and Level of Electoral Democracy"
+author: "Jason Gordon - jagordon@uchicago.edu"
+date: March 13, 2025
+    
 format: 
-  html:
-    title-block-banner: true
-    title: "Shifts in Values, Shifts in Democracy"
-    subtitle: "Identifying Correlations between World Values Survey Responses and Level of Electoral Democracy"
-    author:
-      - name: Jason Gordon
-        email: jagordon@uchicago.edu
-        affiliation: 
-          - name: The University of Chicago
-            city: Chicago
-            state: IL
-            url: https://www.uchicago.edu/
-    date: March 13, 2025
-    abstract: "This project combines the World Values Survey data with V-DEM's electoral democracy score, seeking to identify correlations between people's values and their state's level of democracy - and if it will undergo democratic backsliding. You can find the project at <a>https://github.com/jgsbd210945/30100_final</a>."
-
+  pdf:
+    keep-tex: true
+    latex-engine: xelatex
 bibliography: 30100_bibliography.bib
 csl: chicago-fullnote-bibliography.csl
 ---
+
+This project combines the World Values Survey data with V-DEM's electoral democracy score, seeking to identify correlations between people's values and their state's level of democracy - and if it will undergo democratic backsliding. You can find the project at: <https://github.com/jgsbd210945/30100_final>.
+
 \newpage
 
 ## Intoduction
@@ -408,7 +404,7 @@ The most important features for each model (above 0.1 importance) are as follows
   + Q219 (Political Action Online: encouraging others to take action)
 * **Difference in ED Score:**
   + Q33_3 (Jobs Scarce: Men should have more right to a job than woken)
-  + Q73 (Confidence in Parliament)
+  + Q73 (Confidence in a state's parliament)
   + Q3 (Important in Life: leisure time)
   + Q31 (Men make better business executives than women)
   + Q35_3 (Problem if men have more income than women)
